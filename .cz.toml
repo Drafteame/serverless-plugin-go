@@ -1,0 +1,15 @@
+[tool]
+[tool.commitizen]
+name = "cz_customize"
+version = "0.0.0"
+tag_format = "v$version"
+bump_message = "bump: release $current_version → $new_version [skip-ci]"
+update_changelog_on_bump = true
+version_files = [
+    "package.json:version",
+]
+
+[tool.commitizen.customize]
+schema_pattern = "(break|build|ci|docs|feat|fix|perf|refactor|style|test|chore|revert|bump|deps)(\\(\\S+\\))?!?:(\\s.*)"
+bump_pattern = "^(break|build|feat|fix|refactor|style|test|revert|deps|docs|ci|chore)"
+bump_map = {"break" = "MAJOR", "build" = "MINOR", "feat" = "MINOR", "revert" = "MINOR", "fix" = "PATCH", "refactor" = "PATCH", "style" = "PATCH", "test" = "PATCH", "ci" = "PATCH", "deps" = "PATCH", "chore" = "PATCH", "docs" = "PATCH"}

@@ -1,0 +1,61 @@
+{
+  "name": "serverless-plugin-go",
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Serverless Framework plugin that compiles Go functions on the fly",
+  "main": "index.js",
+  "scripts": {
+    "lint": "npx eslint --fix .",
+    "format": "npx prettier --write .",
+    "test": "npx mocha index.test.js",
+    "depsUpgrade": "node ./scripts/updateDeps.cjs",
+    "pre-commit": "pre-commit install --hook-type commit-msg"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Drafteame/serverless-plugin-go.git"
+  },
+  "keywords": [
+    "serverless",
+    "serverless framework",
+    "serverless plugin",
+    "amazon web services",
+    "aws",
+    "lambda",
+    "golang",
+    "go"
+  ],
+  "author": "Maciej Winnicki <maciej.winnicki@gmail.com>",
+  "contributors": [
+    {
+      "name": "Eduardo Aguilar",
+      "email": "dante.aguilar41@gmail.com",
+      "url": "https://github.com/danteay"
+    }
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Drafteame/serverless-plugin-go/issues"
+  },
+  "homepage": "https://github.com/Drafteame/serverless-plugin-go#readme",
+  "dependencies": {
+    "adm-zip": "^0.5.10",
+    "chalk": "^5.3.0",
+    "pretty-hrtime": "^1.0.3",
+    "util": "^0.12.5"
+  },
+  "devDependencies": {
+    "chai": "^4.3.10",
+    "child_process": "^1.0.2",
+    "eslint": "^8.52.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-import": "^2.29.0",
+    "eslint-plugin-prettier": "^5.0.1",
+    "fs": "^0.0.1-security",
+    "mocha": "^10.2.0",
+    "prettier": "^3.0.3",
+    "sinon": "^17.0.0",
+    "sinon-chai": "^3.7.0"
+  }
+}
