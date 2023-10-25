@@ -74,7 +74,10 @@ describe("Go Plugin", () => {
 
     expect(execStub).to.have.been.calledWith(
       `go build -ldflags="-s -w" -o .bin/testFunc2 functions/func2/main.go`,
-      { cwd: ".", env: { CGO_ENABLED: "0", GOOS: "linux" } },
+      {
+        cwd: ".",
+        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+      },
     );
 
     expect(config.service.functions.testFunc3.handler).to.equal(
@@ -83,7 +86,10 @@ describe("Go Plugin", () => {
 
     expect(execStub).to.have.been.calledWith(
       `go build -ldflags="-s -w" -o .bin/testFunc3 functions/func3`,
-      { cwd: ".", env: { CGO_ENABLED: "0", GOOS: "linux" } },
+      {
+        cwd: ".",
+        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+      },
     );
   });
 
@@ -113,7 +119,10 @@ describe("Go Plugin", () => {
     // then
     expect(execStub).to.have.been.calledOnceWith(
       `go build -o .bin/testFunc1 functions/func1/main.go`,
-      { cwd: ".", env: { CGO_ENABLED: "0", GOOS: "linux" } },
+      {
+        cwd: ".",
+        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+      },
     );
   });
 
@@ -141,7 +150,13 @@ describe("Go Plugin", () => {
     // then
     expect(execStub).to.have.been.calledOnceWith(
       `go build -ldflags="-s -w" -o .bin/testFunc1 functions/func1/main.go`,
-      { cwd: ".", env: { CGO_ENABLED: "0", GOOS: "linux", GOARCH: "arm64" } },
+      {
+        cwd: ".",
+        env: {
+          ...process.env,
+          ...{ CGO_ENABLED: "0", GOOS: "linux", GOARCH: "arm64" },
+        },
+      },
     );
   });
 
@@ -171,7 +186,10 @@ describe("Go Plugin", () => {
     // then
     expect(execStub).to.have.been.calledOnceWith(
       `go build -ldflags="-s -w" -o ../.bin/testFunc1 functions/func1/main.go`,
-      { cwd: "gopath", env: { CGO_ENABLED: "0", GOOS: "linux" } },
+      {
+        cwd: "gopath",
+        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+      },
     );
   });
 
@@ -245,7 +263,10 @@ describe("Go Plugin", () => {
     // then
     expect(execStub).to.have.been.calledOnceWith(
       `go build -ldflags="-s -w" -o .bin/testFunc1 functions/func1/main.go`,
-      { cwd: ".", env: { CGO_ENABLED: "0", GOOS: "linux" } },
+      {
+        cwd: ".",
+        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+      },
     );
   });
 
@@ -284,7 +305,10 @@ describe("Go Plugin", () => {
 
     expect(execStub).to.have.been.calledWith(
       `go build -ldflags="-s -w" -o ../../.bin/testFunc1 .`,
-      { cwd: "functions/func1", env: { CGO_ENABLED: "0", GOOS: "linux" } },
+      {
+        cwd: "functions/func1",
+        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+      },
     );
 
     expect(config.service.functions.testFunc2.handler).to.equal(
@@ -293,7 +317,10 @@ describe("Go Plugin", () => {
 
     expect(execStub).to.have.been.calledWith(
       `go build -ldflags="-s -w" -o ../../.bin/testFunc2 main.go`,
-      { cwd: "functions/func2", env: { CGO_ENABLED: "0", GOOS: "linux" } },
+      {
+        cwd: "functions/func2",
+        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+      },
     );
   });
 

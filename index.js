@@ -99,6 +99,8 @@ export default class Go {
     const name = this.options.function;
     const func = this.serverless.service.functions[this.options.function];
 
+    this.logInfo(`Compilation time (${name}): ${prettyHrtime(timeEnd)}`);
+
     const timeStart = process.hrtime();
     await this.compile(name, func, false);
     const timeEnd = process.hrtime(timeStart);
@@ -184,7 +186,7 @@ export default class Go {
       env["GOARCH"] = "arm64";
     }
 
-    let execOpts = { cwd: cwd, env: env };
+    let execOpts = { cwd: cwd, env: { ...process.env, ...env } };
 
     try {
       await this.exec(command, execOpts);
