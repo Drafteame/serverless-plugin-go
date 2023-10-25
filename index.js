@@ -62,6 +62,8 @@ export default class Go {
     const name = this.options.function;
     const func = this.serverless.service.functions[this.options.function];
 
+    this.logInfo(`Starting compilation...`);
+
     const timeStart = process.hrtime();
     await this.compile(name, func);
     const timeEnd = process.hrtime(timeStart);
@@ -74,6 +76,8 @@ export default class Go {
    */
   async compileFunctions() {
     let names = Object.keys(this.serverless.service.functions);
+
+    this.logInfo(`Starting compilation...`);
 
     const timeStart = process.hrtime();
 
@@ -99,7 +103,7 @@ export default class Go {
     const name = this.options.function;
     const func = this.serverless.service.functions[this.options.function];
 
-    this.logInfo(`Compilation time (${name}): ${prettyHrtime(timeEnd)}`);
+    this.logInfo(`Starting compilation...`);
 
     const timeStart = process.hrtime();
     await this.compile(name, func, false);
