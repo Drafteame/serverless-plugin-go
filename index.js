@@ -130,6 +130,10 @@ export default class Go {
       return;
     }
 
+    if (arch == "arm64") {
+      config.env["GOARCH"] = "arm64";
+    }
+
     const absHandler = path.resolve(config.baseDir);
     const absBin = path.resolve(config.binDir);
 
@@ -148,6 +152,10 @@ export default class Go {
 
       compileBinPath = path.relative(cwd, compileBinPath);
     }
+
+    this.logDebug(`[${name}] env: ${JSON.stringify(config.env)}`);
+    this.logDebug(`[${name}] cwd: ${cwd}`);
+    this.logDebug(`[${name}] arch: ${arch}`);
 
     await this.execCompilation(
       config.cmd,
@@ -186,10 +194,6 @@ export default class Go {
   async execCompilation(cmd, out, main, cwd, env, arch) {
     let command = `${cmd} -o ${out} ${main}`;
 
-    if (arch == "arm64") {
-      env["GOARCH"] = "arm64";
-    }
-
     let execOpts = { cwd: cwd, env: { ...process.env, ...env } };
 
     try {
@@ -225,7 +229,7 @@ export default class Go {
    * @returns {Object}
    */
   getConfig() {
-    let config = this.defaultConfig;
+    let config = { ...this.defaultConfig };
     const service = this.serverless.service;
 
     if (service.custom && service.custom.go) {
@@ -277,6 +281,19 @@ export default class Go {
     }
 
     return runtime;
+  }
+
+  /**
+   * Print a plugin debug log message
+   *
+   * @param {string} message Log message
+   */
+  logDebug(message) {
+    if (!this.options.verbose) {
+      return;
+    }
+
+    this.serverless.cli.consoleLog(`${chalk.yellow(logPrefix)}: ${message}`);
   }
 
   /**
