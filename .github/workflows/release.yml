@@ -1,10 +1,9 @@
 name: Release
 
 on:
-  workflow_dispatch:
-  #push:
-  #  branches:
-  #    - main
+  push:
+    branches:
+      - main
 
 env:
   GIT_USER_EMAIL: ${{ secrets.GIT_EMAIL }}
@@ -51,7 +50,7 @@ jobs:
         uses: ad-m/github-push-action@v0.6.0
         with:
           github_token: ${{ secrets.ACCESS_TOKEN }}
-          repository: "Drafteame/serverless-plugin-global-layers"
+          repository: "Drafteame/serverless-plugin-go"
           branch: "main"
           directory: .
           tags: true
