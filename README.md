@@ -42,11 +42,24 @@ Default values:
 ```yaml
 custom:
   go:
-    baseDir: '.' # folder where go.mod file lives, if set `handler` property should be set relatively to that folder
-    binDir: '.bin' # target folder for binary files
-    cmd: 'go build -ldflags="-s -w"' # compile command
-    monorepo: false # if enabled, builds function every directory (useful for monorepo where go.mod is managed by each function
-    env: # environment variables used to compile binaries
+    # folder where go.mod file lives, if set `handler` property should be set relatively to that folder
+    baseDir: '.'
+
+    # Final target destination of the binary outputs
+    binDir: '.bin'
+
+    # Compile command that should be used to build binaries
+    cmd: 'go build -ldflags="-s -w"'
+
+    # If enabled, builds function every directory (useful for monorepo where go.mod is managed by each function
+    monorepo: false
+
+    # Number of concurrent process used to compile functions, you can fine tune this number to your needs.
+    # Alternatively you can use the env var `SP_GO_CONCURRENCY` to override this configuration
+    concurrency: 5
+
+    # Environment variables used to compile binaries
+    env:
       GOOS: 'linux' # Default compile OS
       CGO_ENABLED: '0' # By default CGO is disabled
 ```
