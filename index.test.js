@@ -324,7 +324,7 @@ describe("Go Plugin", () => {
     );
   });
 
-  it("compiles Go functions", async () => {
+  it("Compiles Go functions", async () => {
     config.service.setFunctions({
       testFunc1: {
         name: "testFunc1",
@@ -345,5 +345,59 @@ describe("Go Plugin", () => {
     expect(config.service.functions.testFunc1.handler).to.equal(
       `.bin/testFunc1`,
     );
+  });
+
+  it("Should get concurrency config", async () => {
+    config.service.setFunctions({
+      testFunc1: {
+        name: "testFunc1",
+        runtime: "provided.al2",
+        handler: "functions/func2/main.go",
+      },
+    });
+
+    const plugin = new Go(config);
+
+    expect(plugin.config.concurrency).to.be.equal(
+      plugin.defaultConfig.concurrency,
+    );
+  });
+
+  it("Should get concurrency from env vars", async () => {
+    config.service.setFunctions({
+      testFunc1: {
+        name: "testFunc1",
+        runtime: "provided.al2",
+        handler: "functions/func2/main.go",
+      },
+    });
+
+    process.env["SP_GO_CONCURRENCY"] = "10";
+
+    const plugin = new Go(config);
+
+    expect(plugin.config.concurrency).to.be.equal(10);
+
+    delete process.env["SP_GO_CONCURRENCY"];
+  });
+
+  it("Should get default concurrency if env var can't be parsed", async () => {
+    config.service.setFunctions({
+      testFunc1: {
+        name: "testFunc1",
+        runtime: "provided.al2",
+        handler: "functions/func2/main.go",
+      },
+    });
+
+    process.env["SP_GO_CONCURRENCY"] = "something";
+
+    const plugin = new Go(config);
+
+    expect(plugin.config.concurrency).to.be.equal(
+      plugin.defaultConfig.concurrency,
+    );
+
+    delete process.env["SP_GO_CONCURRENCY"];
   });
 });

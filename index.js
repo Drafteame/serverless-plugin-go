@@ -3,6 +3,7 @@ import cp from "child_process";
 import prettyHrtime from "pretty-hrtime";
 import chalk from "chalk";
 import path from "path";
+import plimit from "p-limit";
 import AdmZip from "adm-zip";
 import { readFileSync } from "fs";
 
@@ -29,7 +30,10 @@ export default class Go {
       },
       cmd: 'go build -ldflags="-s -w"',
       monorepo: false,
+      concurrency: 5,
     };
+
+    this.config = this.getConfig();
 
     this.hooks = {
       "before:deploy:function:packageFunction": this.compileFunction.bind(this),
@@ -81,12 +85,14 @@ export default class Go {
 
     const timeStart = process.hrtime();
 
-    let compiles = [];
+    this.logDebug(`using concurrency limit ${this.config.concurrency}...`);
 
-    for (let funcName of names) {
+    const limit = plimit(this.config.concurrency);
+
+    let compiles = names.map((funcName) => {
       const func = this.serverless.service.functions[funcName];
-      compiles.push(this.compile(funcName, func));
-    }
+      return limit(() => this.compile(funcName, func));
+    });
 
     await Promise.all(compiles);
 
@@ -122,7 +128,7 @@ export default class Go {
    * @throws {Error} if compilation command fails
    */
   async compile(name, func, artifact = true) {
-    const config = this.getConfig();
+    const config = this.config;
     const arch = this.getFunctionArch(name);
     const runtime = this.getFunctionRuntime(name);
 
@@ -239,6 +245,9 @@ export default class Go {
     for (let env of Object.keys(config.env)) {
       config.env[env] = `${config.env[env]}`;
     }
+
+    config.concurrency =
+      parseInt(process.env.SP_GO_CONCURRENCY) || config.concurrency;
 
     return config;
   }

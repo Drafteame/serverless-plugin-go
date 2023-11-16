@@ -41,6 +41,7 @@
   "dependencies": {
     "adm-zip": "^0.5.10",
     "chalk": "^5.3.0",
+    "p-limit": "^5.0.0",
     "pretty-hrtime": "^1.0.3",
     "util": "^0.12.5"
   },
