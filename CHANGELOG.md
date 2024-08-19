@@ -1,3 +1,8 @@
+## v0.0.3 (2024-08-19)
+
+
+- deps: resolve vulnerabilities (#7)
+
 ## v0.0.2 (2023-11-16)
 
 
