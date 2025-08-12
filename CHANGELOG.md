@@ -1,3 +1,10 @@
+## v0.1.0 (2025-08-12)
+
+
+- feat: build hooks (#8)
+- * feat: add executable list of build hooks before build
+- * fix: remove .idea folder
+
 ## v0.0.3 (2024-08-19)
 
 
