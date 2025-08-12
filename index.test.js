@@ -400,4 +400,157 @@ describe("Go Plugin", () => {
 
     delete process.env["SP_GO_CONCURRENCY"];
   });
+
+  it("Should execute beforeBuild commands once before all compilations", async () => {
+    config.service
+      .setCustom({
+        go: {
+          beforeBuild: ["echo 'before build command'", "go mod tidy"],
+        },
+      })
+      .setFunctions({
+        testFunc1: {
+          name: "testFunc1",
+          runtime: "provided.al2",
+          handler: "functions/func1/main.go",
+        },
+        testFunc2: {
+          name: "testFunc2",
+          runtime: "provided.al2",
+          handler: "functions/func2/main.go",
+        },
+      });
+
+    const plugin = new Go(config);
+    plugin.exec = execStub;
+    plugin.readFileSync = readFileSyncStub;
+    plugin.zip = admZipStub;
+
+    // when
+    await plugin.compileFunctions();
+
+    // then
+    // Verify beforeBuild commands were executed once
+    expect(execStub).to.have.been.calledWith("echo 'before build command'", {
+      cwd: ".",
+      env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+    });
+    expect(execStub).to.have.been.calledWith("go mod tidy", {
+      cwd: ".",
+      env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+    });
+
+    // Verify compilation commands were executed for each function
+    expect(execStub).to.have.been.calledWith(
+      `go build -ldflags="-s -w" -o .bin/testFunc1 functions/func1/main.go`,
+      {
+        cwd: ".",
+        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+      },
+    );
+    expect(execStub).to.have.been.calledWith(
+      `go build -ldflags="-s -w" -o .bin/testFunc2 functions/func2/main.go`,
+      {
+        cwd: ".",
+        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+      },
+    );
+
+    // Total calls should be 4: 2 beforeBuild commands + 2 compilation commands
+    expect(execStub.callCount).to.equal(4);
+  });
+
+  it("Should execute beforeBuild commands once for compileFunction", async () => {
+    config.service
+      .setCustom({
+        go: {
+          beforeBuild: ["echo 'before build command'", "go mod tidy"],
+        },
+      })
+      .setFunctions({
+        testFunc1: {
+          name: "testFunc1",
+          runtime: "provided.al2",
+          handler: "functions/func1/main.go",
+        },
+      });
+
+    const plugin = new Go(config, { function: "testFunc1" });
+    plugin.exec = execStub;
+    plugin.readFileSync = readFileSyncStub;
+    plugin.zip = admZipStub;
+
+    // when
+    await plugin.compileFunction();
+
+    // then
+    // Verify beforeBuild commands were executed once
+    expect(execStub).to.have.been.calledWith("echo 'before build command'", {
+      cwd: ".",
+      env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+    });
+    expect(execStub).to.have.been.calledWith("go mod tidy", {
+      cwd: ".",
+      env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+    });
+
+    // Verify the compilation command was executed
+    expect(execStub).to.have.been.calledWith(
+      `go build -ldflags="-s -w" -o .bin/testFunc1 functions/func1/main.go`,
+      {
+        cwd: ".",
+        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+      },
+    );
+
+    // Total calls should be 3: 2 beforeBuild commands + 1 compilation command
+    expect(execStub.callCount).to.equal(3);
+  });
+
+  it("Should execute beforeBuild commands once for compileToInvoke", async () => {
+    config.service
+      .setCustom({
+        go: {
+          beforeBuild: ["echo 'before build command'", "go mod tidy"],
+        },
+      })
+      .setFunctions({
+        testFunc1: {
+          name: "testFunc1",
+          runtime: "provided.al2",
+          handler: "functions/func1/main.go",
+        },
+      });
+
+    const plugin = new Go(config, { function: "testFunc1" });
+    plugin.exec = execStub;
+    plugin.readFileSync = readFileSyncStub;
+    plugin.zip = admZipStub;
+
+    // when
+    await plugin.compileToInvoke();
+
+    // then
+    // Verify beforeBuild commands were executed once
+    expect(execStub).to.have.been.calledWith("echo 'before build command'", {
+      cwd: ".",
+      env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+    });
+    expect(execStub).to.have.been.calledWith("go mod tidy", {
+      cwd: ".",
+      env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+    });
+
+    // Verify compilation command was executed
+    expect(execStub).to.have.been.calledWith(
+      `go build -ldflags="-s -w" -o .bin/testFunc1 functions/func1/main.go`,
+      {
+        cwd: ".",
+        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+      },
+    );
+
+    // Total calls should be 3: 2 beforeBuild commands + 1 compilation command
+    expect(execStub.callCount).to.equal(3);
+  });
 });

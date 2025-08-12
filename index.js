@@ -31,6 +31,7 @@ export default class Go {
       cmd: 'go build -ldflags="-s -w"',
       monorepo: false,
       concurrency: 5,
+      beforeBuild: [],
     };
 
     this.config = this.getConfig();
@@ -39,6 +40,7 @@ export default class Go {
       "before:deploy:function:packageFunction": this.compileFunction.bind(this),
       "before:package:createDeploymentArtifacts":
         this.compileFunctions.bind(this),
+
       // Because of https://github.com/serverless/serverless/blob/master/lib/plugins/aws/invokeLocal/index.js#L361
       // plugin needs to compile a function and then ignore packaging.
       "before:invoke:local:invoke": this.compileToInvoke.bind(this),
@@ -60,7 +62,7 @@ export default class Go {
   }
 
   /**
-   * Execute single function compilation and package.
+   * Execute a single function compilation and package.
    */
   async compileFunction() {
     const name = this.options.function;
@@ -69,6 +71,10 @@ export default class Go {
     this.logInfo(`Starting compilation...`);
 
     const timeStart = process.hrtime();
+
+    // Execute beforeBuild commands once before compilation
+    await this.execBeforeBuildCommands(this.config.baseDir, this.config.env);
+
     await this.compile(name, func);
     const timeEnd = process.hrtime(timeStart);
 
@@ -84,6 +90,9 @@ export default class Go {
     this.logInfo(`Starting compilation...`);
 
     const timeStart = process.hrtime();
+
+    // Execute beforeBuild commands once before all compilations
+    await this.execBeforeBuildCommands(this.config.baseDir, this.config.env);
 
     this.logDebug(`using concurrency limit ${this.config.concurrency}...`);
 
@@ -102,8 +111,8 @@ export default class Go {
   }
 
   /**
-   * Execute single function compilation and do not create the final artifact.
-   * This is used when `invoke` command is performed.
+   * Execute a single function compilation and do not create the final artifact.
+   * This is used when the ` invoke ` command is performed.
    */
   async compileToInvoke() {
     const name = this.options.function;
@@ -112,6 +121,10 @@ export default class Go {
     this.logInfo(`Starting compilation...`);
 
     const timeStart = process.hrtime();
+
+    // Execute beforeBuild commands once before compilation
+    await this.execBeforeBuildCommands(this.config.baseDir, this.config.env);
+
     await this.compile(name, func, false);
     const timeEnd = process.hrtime(timeStart);
 
@@ -136,7 +149,7 @@ export default class Go {
       return;
     }
 
-    if (arch == "arm64") {
+    if (arch === "arm64") {
       config.env["GOARCH"] = "arm64";
     }
 
@@ -188,6 +201,34 @@ export default class Go {
   }
 
   /**
+   * Execute bash commands from beforeBuild configuration.
+   *
+   * @param {string} cwd Working directory
+   * @param {Object} env Set of environment variables
+   */
+  async execBeforeBuildCommands(cwd, env) {
+    if (!this.config.beforeBuild || !this.config.beforeBuild.length) {
+      return;
+    }
+
+    const execOpts = { cwd: cwd, env: { ...process.env, ...env } };
+
+    for (const cmd of this.config.beforeBuild) {
+      this.logDebug(`Executing beforeBuild command: ${cmd}`);
+      try {
+        await this.exec(cmd, execOpts);
+      } catch (e) {
+        this.logError(
+          `Error executing beforeBuild command (cwd: ${cwd}): ${e.message}`,
+        );
+        throw new Error(
+          `error executing beforeBuild command '${cmd}' (cwd: ${cwd})`,
+        );
+      }
+    }
+  }
+
+  /**
    * Execute compilation command from collected configuration.
    *
    * @param {string} cmd Compilation command
@@ -212,11 +253,11 @@ export default class Go {
   }
 
   /**
-   * Create package to deploy lambda
+   * Packages a bootstrap file into a zip archive and updates the service function's package configuration.
    *
-   * @param {string} name Name of the function config
-   * @param {Object} baseConfig Configuration object
-   * @param {string} binPath Path to generated binary
+   * @param {string} name - The name of the serverless function to update the package for.
+   * @param {string} binPath - The path to the bootstrap binary file.
+   * @return {void} This method does not return any value.
    */
   packageBootstrap(name, binPath) {
     this.zip.addFile("bootstrap", this.readFileSync(binPath), "", 0o755);
@@ -231,8 +272,11 @@ export default class Go {
   }
 
   /**
-   * Merge default con
-   * @returns {Object}
+   * Retrieves and consolidates the configuration by merging the default configuration
+   * with user-defined custom configurations and environment variables.
+   *
+   * @return {Object} The final configuration object containing merged settings,
+   *                  environment variables as strings, and concurrency settings.
    */
   getConfig() {
     let config = { ...this.defaultConfig };

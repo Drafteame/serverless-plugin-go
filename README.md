@@ -62,6 +62,10 @@ custom:
     env:
       GOOS: 'linux' # Default compile OS
       CGO_ENABLED: '0' # By default CGO is disabled
+      
+    # Bash commands to execute before compilation
+    # These commands will be executed once before all compilations
+    beforeBuild: []
 ```
 
 ### How does it work?
@@ -92,6 +96,20 @@ functions:
     architecture: 'arm64'
     handler: test/main.go
 ```
+
+### How to execute commands before compilation?
+
+You can define bash commands to be executed before any compilation action using the `beforeBuild` configuration:
+
+```yaml
+custom:
+  go:
+    beforeBuild:
+      - 'go generate ./...'
+      - 'go mod tidy'
+```
+
+These commands will be executed once before all compilations, not for each function individually. This applies whether you're using `serverless deploy`, `serverless deploy function`, or `serverless invoke local`.
 
 ## Caveats
 
