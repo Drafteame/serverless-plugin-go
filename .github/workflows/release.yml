@@ -63,6 +63,9 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - bump_version
+    permissions:
+      id-token: write
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -74,15 +77,14 @@ jobs:
       - name: Set up NodeJS
         uses: actions/setup-node@v3
         with:
-          node-version: "20"
+          node-version: "24"
 
       - name: Install dependencies
         run: npm install
 
       - name: Publish to NPM
-        uses: JS-DevTools/npm-publish@v2
+        uses: JS-DevTools/npm-publish@v4
         with:
-          token: ${{ secrets.NPM_ACCESS_TOKEN }}
           access: public
           strategy: upgrade
 
