@@ -16,7 +16,7 @@ jobs:
   bump_version:
     if: "!startsWith(github.event.head_commit.message, 'bump:')"
     runs-on: ubuntu-latest
-    name: "Bump version"
+    name: 'Bump version'
     outputs:
       version: ${{ steps.cz.outputs.version }}
     steps:
@@ -24,8 +24,8 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-          token: "${{ secrets.ACCESS_TOKEN }}"
-          ref: "main"
+          token: '${{ secrets.ACCESS_TOKEN }}'
+          ref: 'main'
 
       - name: Set up Python
         uses: actions/setup-python@v4.7.0
@@ -50,8 +50,8 @@ jobs:
         uses: ad-m/github-push-action@v0.6.0
         with:
           github_token: ${{ secrets.ACCESS_TOKEN }}
-          repository: "Drafteame/serverless-plugin-go"
-          branch: "main"
+          repository: 'Drafteame/serverless-plugin-go'
+          branch: 'main'
           directory: .
           tags: true
 
@@ -77,7 +77,7 @@ jobs:
       - name: Set up NodeJS
         uses: actions/setup-node@v3
         with:
-          node-version: "24"
+          node-version: '24'
 
       - name: Install dependencies
         run: npm install

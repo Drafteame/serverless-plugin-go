@@ -15,25 +15,25 @@
 
 1. Install the plugin
 
-    ```bash
-    npm i --save-dev serverless-plugin-go
-    ```
+   ```bash
+   npm i --save-dev serverless-plugin-go
+   ```
 
 1. Add it to your `serverless.yaml`
 
-    ```yaml
-    plugins:
-      - 'serverless-plugin-go'
-    ```
+   ```yaml
+   plugins:
+     - 'serverless-plugin-go'
+   ```
 
 1. Replace every Go function's `handler` with `*.go` file path or a package path. E.g.
 
-    ```yaml
-    functions:
-      example:
-        runtime: 'provided.al2'
-        handler: 'functions/example/main.go' # or just functions/example
-    ```
+   ```yaml
+   functions:
+     example:
+       runtime: 'provided.al2'
+       handler: 'functions/example/main.go' # or just functions/example
+   ```
 
 ## Configuration
 
@@ -62,7 +62,7 @@ custom:
     env:
       GOOS: 'linux' # Default compile OS
       CGO_ENABLED: '0' # By default CGO is disabled
-      
+
     # Bash commands to execute before compilation
     # These commands will be executed once before all compilations
     beforeBuild: []

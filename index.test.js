@@ -1,16 +1,14 @@
-import sinon from "sinon";
-import chai from "chai";
-import sinonChai from "sinon-chai";
+import sinon from 'sinon';
+import { expect, use } from 'chai';
+import sinonChai from 'sinon-chai';
 
-import Go from "./index.js";
-import ServerlessMock from "./mocks/serverless.mock.js";
+import Go from './index.js';
+import ServerlessMock from './mocks/serverless.mock.js';
 
-const expect = chai.expect;
+use(sinonChai);
 
-chai.use(sinonChai);
-
-describe("Go Plugin", () => {
-  let config = new ServerlessMock();
+describe('Go Plugin', () => {
+  const config = new ServerlessMock();
   let sandbox;
   let execStub;
   let readFileSyncStub;
@@ -19,10 +17,7 @@ describe("Go Plugin", () => {
   beforeEach(() => {
     sandbox = sinon.createSandbox();
     execStub = sandbox.stub().resolves({ stdin: null, stdout: null });
-    readFileSyncStub = sinon
-      .stub()
-      .withArgs(".bin/testFunc1")
-      .returns("fake binary content");
+    readFileSyncStub = sinon.stub().withArgs('.bin/testFunc1').returns('fake binary content');
 
     admZipStub = {
       addFile: sinon.stub(),
@@ -35,27 +30,27 @@ describe("Go Plugin", () => {
     sandbox.restore();
   });
 
-  it("Compiles only Go functions with allowed providers", async () => {
+  it('Compiles only Go functions with allowed providers', async () => {
     config.service.setFunctions({
       testFunc1: {
-        name: "testFunc1",
-        runtime: "nodejs10.x",
-        handler: "functions/func1",
+        name: 'testFunc1',
+        runtime: 'nodejs10.x',
+        handler: 'functions/func1',
       },
       testFunc2: {
-        name: "testFunc2",
-        runtime: "provided.al2",
-        handler: "functions/func2/main.go",
+        name: 'testFunc2',
+        runtime: 'provided.al2',
+        handler: 'functions/func2/main.go',
       },
       testFunc3: {
-        name: "testFunc3",
-        runtime: "provided.al2",
-        handler: "functions/func3",
+        name: 'testFunc3',
+        runtime: 'provided.al2',
+        handler: 'functions/func3',
       },
       testFunc4: {
-        name: "testFunc4",
-        runtime: "go1.x",
-        handler: "functions/func4",
+        name: 'testFunc4',
+        runtime: 'go1.x',
+        handler: 'functions/func4',
       },
     });
 
@@ -68,43 +63,33 @@ describe("Go Plugin", () => {
     await plugin.compileFunctions();
 
     // then
-    expect(config.service.functions.testFunc2.handler).to.equal(
-      `.bin/testFunc2`,
-    );
+    expect(config.service.functions.testFunc2.handler).to.equal(`.bin/testFunc2`);
 
-    expect(execStub).to.have.been.calledWith(
-      `go build -ldflags="-s -w" -o .bin/testFunc2 functions/func2/main.go`,
-      {
-        cwd: ".",
-        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
-      },
-    );
+    expect(execStub).to.have.been.calledWith(`go build -ldflags="-s -w" -o .bin/testFunc2 functions/func2/main.go`, {
+      cwd: '.',
+      env: { ...process.env, ...{ CGO_ENABLED: '0', GOOS: 'linux' } },
+    });
 
-    expect(config.service.functions.testFunc3.handler).to.equal(
-      `.bin/testFunc3`,
-    );
+    expect(config.service.functions.testFunc3.handler).to.equal(`.bin/testFunc3`);
 
-    expect(execStub).to.have.been.calledWith(
-      `go build -ldflags="-s -w" -o .bin/testFunc3 functions/func3`,
-      {
-        cwd: ".",
-        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
-      },
-    );
+    expect(execStub).to.have.been.calledWith(`go build -ldflags="-s -w" -o .bin/testFunc3 functions/func3`, {
+      cwd: '.',
+      env: { ...process.env, ...{ CGO_ENABLED: '0', GOOS: 'linux' } },
+    });
   });
 
-  it("Compiles Go function with custom command", async () => {
+  it('Compiles Go function with custom command', async () => {
     config.service
       .setCustom({
         go: {
-          cmd: "go build",
+          cmd: 'go build',
         },
       })
       .setFunctions({
         testFunc1: {
-          name: "testFunc1",
-          runtime: "provided.al2",
-          handler: "functions/func1/main.go",
+          name: 'testFunc1',
+          runtime: 'provided.al2',
+          handler: 'functions/func1/main.go',
         },
       });
 
@@ -117,25 +102,22 @@ describe("Go Plugin", () => {
     await plugin.compileFunctions();
 
     // then
-    expect(execStub).to.have.been.calledOnceWith(
-      `go build -o .bin/testFunc1 functions/func1/main.go`,
-      {
-        cwd: ".",
-        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
-      },
-    );
+    expect(execStub).to.have.been.calledOnceWith(`go build -o .bin/testFunc1 functions/func1/main.go`, {
+      cwd: '.',
+      env: { ...process.env, ...{ CGO_ENABLED: '0', GOOS: 'linux' } },
+    });
   });
 
-  it("Compiles Go function with arm architecture", async () => {
+  it('Compiles Go function with arm architecture', async () => {
     config.service
       .setProvider({
-        architecture: "arm64",
+        architecture: 'arm64',
       })
       .setFunctions({
         testFunc1: {
-          name: "testFunc1",
-          runtime: "provided.al2",
-          handler: "functions/func1/main.go",
+          name: 'testFunc1',
+          runtime: 'provided.al2',
+          handler: 'functions/func1/main.go',
         },
       });
 
@@ -151,27 +133,27 @@ describe("Go Plugin", () => {
     expect(execStub).to.have.been.calledOnceWith(
       `go build -ldflags="-s -w" -o .bin/testFunc1 functions/func1/main.go`,
       {
-        cwd: ".",
+        cwd: '.',
         env: {
           ...process.env,
-          ...{ CGO_ENABLED: "0", GOOS: "linux", GOARCH: "arm64" },
+          ...{ CGO_ENABLED: '0', GOOS: 'linux', GOARCH: 'arm64' },
         },
       },
     );
   });
 
-  it("Compiles Go function with custom base dir", async () => {
+  it('Compiles Go function with custom base dir', async () => {
     config.service
       .setCustom({
         go: {
-          baseDir: "gopath",
+          baseDir: 'gopath',
         },
       })
       .setFunctions({
         testFunc1: {
-          name: "testFunc1",
-          runtime: "provided.al2",
-          handler: "functions/func1/main.go",
+          name: 'testFunc1',
+          runtime: 'provided.al2',
+          handler: 'functions/func1/main.go',
         },
       });
 
@@ -187,20 +169,20 @@ describe("Go Plugin", () => {
     expect(execStub).to.have.been.calledOnceWith(
       `go build -ldflags="-s -w" -o ../.bin/testFunc1 functions/func1/main.go`,
       {
-        cwd: "gopath",
-        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+        cwd: 'gopath',
+        env: { ...process.env, ...{ CGO_ENABLED: '0', GOOS: 'linux' } },
       },
     );
   });
 
-  it("Throw error if compilation fails", async () => {
+  it('Throw error if compilation fails', async () => {
     execStub.throws();
 
     config.service.setFunctions({
       testFunc1: {
-        name: "testFunc1",
-        runtime: "provided.al2",
-        handler: "functions/func1/main.go",
+        name: 'testFunc1',
+        runtime: 'provided.al2',
+        handler: 'functions/func1/main.go',
       },
     });
 
@@ -216,18 +198,18 @@ describe("Go Plugin", () => {
       return;
     }
 
-    expect.fail("Expected to throw an Error");
+    expect.fail('Expected to throw an Error');
   });
 
-  it("Compiles Go function with global runtime defined", async () => {
+  it('Compiles Go function with global runtime defined', async () => {
     config.service
       .setProvider({
-        runtime: "provided.al2",
+        runtime: 'provided.al2',
       })
       .setFunctions({
         testFunc1: {
-          name: "testFunc1",
-          handler: "functions/func1/main.go",
+          name: 'testFunc1',
+          handler: 'functions/func1/main.go',
         },
       });
 
@@ -237,40 +219,40 @@ describe("Go Plugin", () => {
     plugin.zip = admZipStub;
 
     // when
-    await plugin.hooks["before:package:createDeploymentArtifacts"]();
+    await plugin.hooks['before:package:createDeploymentArtifacts']();
 
     // then
     expect(execStub).to.have.been.calledOnce;
   });
 
-  it("Compiles single Go function", async () => {
+  it('Compiles single Go function', async () => {
     config.service.setFunctions({
       testFunc1: {
-        name: "testFunc1",
-        runtime: "provided.al2",
-        handler: "functions/func1/main.go",
+        name: 'testFunc1',
+        runtime: 'provided.al2',
+        handler: 'functions/func1/main.go',
       },
     });
 
-    const plugin = new Go(config, { function: "testFunc1" });
+    const plugin = new Go(config, { function: 'testFunc1' });
     plugin.exec = execStub;
     plugin.readFileSync = readFileSyncStub;
     plugin.zip = admZipStub;
 
     // when
-    await plugin.hooks["before:deploy:function:packageFunction"]();
+    await plugin.hooks['before:deploy:function:packageFunction']();
 
     // then
     expect(execStub).to.have.been.calledOnceWith(
       `go build -ldflags="-s -w" -o .bin/testFunc1 functions/func1/main.go`,
       {
-        cwd: ".",
-        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+        cwd: '.',
+        env: { ...process.env, ...{ CGO_ENABLED: '0', GOOS: 'linux' } },
       },
     );
   });
 
-  it("Compiles Go function with monorepo", async () => {
+  it('Compiles Go function with monorepo', async () => {
     config.service
       .setCustom({
         go: {
@@ -279,14 +261,14 @@ describe("Go Plugin", () => {
       })
       .setFunctions({
         testFunc1: {
-          name: "testFunc1",
-          runtime: "provided.al2",
-          handler: "functions/func1",
+          name: 'testFunc1',
+          runtime: 'provided.al2',
+          handler: 'functions/func1',
         },
         testFunc2: {
-          name: "testFunc2",
-          runtime: "provided.al2",
-          handler: "functions/func2/main.go",
+          name: 'testFunc2',
+          runtime: 'provided.al2',
+          handler: 'functions/func2/main.go',
         },
       });
 
@@ -296,40 +278,30 @@ describe("Go Plugin", () => {
     plugin.zip = admZipStub;
 
     // when
-    await plugin.hooks["before:package:createDeploymentArtifacts"]();
+    await plugin.hooks['before:package:createDeploymentArtifacts']();
 
     // then
-    expect(config.service.functions.testFunc1.handler).to.equal(
-      `.bin/testFunc1`,
-    );
+    expect(config.service.functions.testFunc1.handler).to.equal(`.bin/testFunc1`);
 
-    expect(execStub).to.have.been.calledWith(
-      `go build -ldflags="-s -w" -o ../../.bin/testFunc1 .`,
-      {
-        cwd: "functions/func1",
-        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
-      },
-    );
+    expect(execStub).to.have.been.calledWith(`go build -ldflags="-s -w" -o ../../.bin/testFunc1 .`, {
+      cwd: 'functions/func1',
+      env: { ...process.env, ...{ CGO_ENABLED: '0', GOOS: 'linux' } },
+    });
 
-    expect(config.service.functions.testFunc2.handler).to.equal(
-      `.bin/testFunc2`,
-    );
+    expect(config.service.functions.testFunc2.handler).to.equal(`.bin/testFunc2`);
 
-    expect(execStub).to.have.been.calledWith(
-      `go build -ldflags="-s -w" -o ../../.bin/testFunc2 main.go`,
-      {
-        cwd: "functions/func2",
-        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
-      },
-    );
+    expect(execStub).to.have.been.calledWith(`go build -ldflags="-s -w" -o ../../.bin/testFunc2 main.go`, {
+      cwd: 'functions/func2',
+      env: { ...process.env, ...{ CGO_ENABLED: '0', GOOS: 'linux' } },
+    });
   });
 
-  it("Compiles Go functions", async () => {
+  it('Compiles Go functions', async () => {
     config.service.setFunctions({
       testFunc1: {
-        name: "testFunc1",
-        runtime: "provided.al2",
-        handler: "functions/func2/main.go",
+        name: 'testFunc1',
+        runtime: 'provided.al2',
+        handler: 'functions/func2/main.go',
       },
     });
 
@@ -339,85 +311,79 @@ describe("Go Plugin", () => {
     plugin.zip = admZipStub;
 
     // when
-    await plugin.hooks["go:build:build"]();
+    await plugin.hooks['go:build:build']();
 
     // then
-    expect(config.service.functions.testFunc1.handler).to.equal(
-      `.bin/testFunc1`,
-    );
+    expect(config.service.functions.testFunc1.handler).to.equal(`.bin/testFunc1`);
   });
 
-  it("Should get concurrency config", async () => {
+  it('Should get concurrency config', async () => {
     config.service.setFunctions({
       testFunc1: {
-        name: "testFunc1",
-        runtime: "provided.al2",
-        handler: "functions/func2/main.go",
+        name: 'testFunc1',
+        runtime: 'provided.al2',
+        handler: 'functions/func2/main.go',
       },
     });
 
     const plugin = new Go(config);
 
-    expect(plugin.config.concurrency).to.be.equal(
-      plugin.defaultConfig.concurrency,
-    );
+    expect(plugin.config.concurrency).to.be.equal(plugin.defaultConfig.concurrency);
   });
 
-  it("Should get concurrency from env vars", async () => {
+  it('Should get concurrency from env vars', async () => {
     config.service.setFunctions({
       testFunc1: {
-        name: "testFunc1",
-        runtime: "provided.al2",
-        handler: "functions/func2/main.go",
+        name: 'testFunc1',
+        runtime: 'provided.al2',
+        handler: 'functions/func2/main.go',
       },
     });
 
-    process.env["SP_GO_CONCURRENCY"] = "10";
+    process.env.SP_GO_CONCURRENCY = '10';
 
     const plugin = new Go(config);
 
     expect(plugin.config.concurrency).to.be.equal(10);
 
-    delete process.env["SP_GO_CONCURRENCY"];
+    delete process.env.SP_GO_CONCURRENCY;
   });
 
   it("Should get default concurrency if env var can't be parsed", async () => {
     config.service.setFunctions({
       testFunc1: {
-        name: "testFunc1",
-        runtime: "provided.al2",
-        handler: "functions/func2/main.go",
+        name: 'testFunc1',
+        runtime: 'provided.al2',
+        handler: 'functions/func2/main.go',
       },
     });
 
-    process.env["SP_GO_CONCURRENCY"] = "something";
+    process.env.SP_GO_CONCURRENCY = 'something';
 
     const plugin = new Go(config);
 
-    expect(plugin.config.concurrency).to.be.equal(
-      plugin.defaultConfig.concurrency,
-    );
+    expect(plugin.config.concurrency).to.be.equal(plugin.defaultConfig.concurrency);
 
-    delete process.env["SP_GO_CONCURRENCY"];
+    delete process.env.SP_GO_CONCURRENCY;
   });
 
-  it("Should execute beforeBuild commands once before all compilations", async () => {
+  it('Should execute beforeBuild commands once before all compilations', async () => {
     config.service
       .setCustom({
         go: {
-          beforeBuild: ["echo 'before build command'", "go mod tidy"],
+          beforeBuild: ["echo 'before build command'", 'go mod tidy'],
         },
       })
       .setFunctions({
         testFunc1: {
-          name: "testFunc1",
-          runtime: "provided.al2",
-          handler: "functions/func1/main.go",
+          name: 'testFunc1',
+          runtime: 'provided.al2',
+          handler: 'functions/func1/main.go',
         },
         testFunc2: {
-          name: "testFunc2",
-          runtime: "provided.al2",
-          handler: "functions/func2/main.go",
+          name: 'testFunc2',
+          runtime: 'provided.al2',
+          handler: 'functions/func2/main.go',
         },
       });
 
@@ -432,50 +398,44 @@ describe("Go Plugin", () => {
     // then
     // Verify beforeBuild commands were executed once
     expect(execStub).to.have.been.calledWith("echo 'before build command'", {
-      cwd: ".",
-      env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+      cwd: '.',
+      env: { ...process.env, ...{ CGO_ENABLED: '0', GOOS: 'linux' } },
     });
-    expect(execStub).to.have.been.calledWith("go mod tidy", {
-      cwd: ".",
-      env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+    expect(execStub).to.have.been.calledWith('go mod tidy', {
+      cwd: '.',
+      env: { ...process.env, ...{ CGO_ENABLED: '0', GOOS: 'linux' } },
     });
 
     // Verify compilation commands were executed for each function
-    expect(execStub).to.have.been.calledWith(
-      `go build -ldflags="-s -w" -o .bin/testFunc1 functions/func1/main.go`,
-      {
-        cwd: ".",
-        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
-      },
-    );
-    expect(execStub).to.have.been.calledWith(
-      `go build -ldflags="-s -w" -o .bin/testFunc2 functions/func2/main.go`,
-      {
-        cwd: ".",
-        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
-      },
-    );
+    expect(execStub).to.have.been.calledWith(`go build -ldflags="-s -w" -o .bin/testFunc1 functions/func1/main.go`, {
+      cwd: '.',
+      env: { ...process.env, ...{ CGO_ENABLED: '0', GOOS: 'linux' } },
+    });
+    expect(execStub).to.have.been.calledWith(`go build -ldflags="-s -w" -o .bin/testFunc2 functions/func2/main.go`, {
+      cwd: '.',
+      env: { ...process.env, ...{ CGO_ENABLED: '0', GOOS: 'linux' } },
+    });
 
     // Total calls should be 4: 2 beforeBuild commands + 2 compilation commands
     expect(execStub.callCount).to.equal(4);
   });
 
-  it("Should execute beforeBuild commands once for compileFunction", async () => {
+  it('Should execute beforeBuild commands once for compileFunction', async () => {
     config.service
       .setCustom({
         go: {
-          beforeBuild: ["echo 'before build command'", "go mod tidy"],
+          beforeBuild: ["echo 'before build command'", 'go mod tidy'],
         },
       })
       .setFunctions({
         testFunc1: {
-          name: "testFunc1",
-          runtime: "provided.al2",
-          handler: "functions/func1/main.go",
+          name: 'testFunc1',
+          runtime: 'provided.al2',
+          handler: 'functions/func1/main.go',
         },
       });
 
-    const plugin = new Go(config, { function: "testFunc1" });
+    const plugin = new Go(config, { function: 'testFunc1' });
     plugin.exec = execStub;
     plugin.readFileSync = readFileSyncStub;
     plugin.zip = admZipStub;
@@ -486,43 +446,40 @@ describe("Go Plugin", () => {
     // then
     // Verify beforeBuild commands were executed once
     expect(execStub).to.have.been.calledWith("echo 'before build command'", {
-      cwd: ".",
-      env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+      cwd: '.',
+      env: { ...process.env, ...{ CGO_ENABLED: '0', GOOS: 'linux' } },
     });
-    expect(execStub).to.have.been.calledWith("go mod tidy", {
-      cwd: ".",
-      env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+    expect(execStub).to.have.been.calledWith('go mod tidy', {
+      cwd: '.',
+      env: { ...process.env, ...{ CGO_ENABLED: '0', GOOS: 'linux' } },
     });
 
     // Verify the compilation command was executed
-    expect(execStub).to.have.been.calledWith(
-      `go build -ldflags="-s -w" -o .bin/testFunc1 functions/func1/main.go`,
-      {
-        cwd: ".",
-        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
-      },
-    );
+    expect(execStub).to.have.been.calledWith(`go build -ldflags="-s -w" -o .bin/testFunc1 functions/func1/main.go`, {
+      cwd: '.',
+      env: { ...process.env, ...{ CGO_ENABLED: '0', GOOS: 'linux' } },
+    });
 
     // Total calls should be 3: 2 beforeBuild commands + 1 compilation command
     expect(execStub.callCount).to.equal(3);
   });
 
-  it("Should execute beforeBuild commands once for compileToInvoke", async () => {
+  it('Should execute beforeBuild commands once for compileToInvoke', async () => {
     config.service
       .setCustom({
         go: {
-          beforeBuild: ["echo 'before build command'", "go mod tidy"],
+          beforeBuild: ["echo 'before build command'", 'go mod tidy'],
         },
       })
       .setFunctions({
         testFunc1: {
-          name: "testFunc1",
-          runtime: "provided.al2",
-          handler: "functions/func1/main.go",
+          name: 'testFunc1',
+          runtime: 'provided.al2',
+          handler: 'functions/func1/main.go',
         },
       });
 
-    const plugin = new Go(config, { function: "testFunc1" });
+    const plugin = new Go(config, { function: 'testFunc1' });
     plugin.exec = execStub;
     plugin.readFileSync = readFileSyncStub;
     plugin.zip = admZipStub;
@@ -533,22 +490,19 @@ describe("Go Plugin", () => {
     // then
     // Verify beforeBuild commands were executed once
     expect(execStub).to.have.been.calledWith("echo 'before build command'", {
-      cwd: ".",
-      env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+      cwd: '.',
+      env: { ...process.env, ...{ CGO_ENABLED: '0', GOOS: 'linux' } },
     });
-    expect(execStub).to.have.been.calledWith("go mod tidy", {
-      cwd: ".",
-      env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+    expect(execStub).to.have.been.calledWith('go mod tidy', {
+      cwd: '.',
+      env: { ...process.env, ...{ CGO_ENABLED: '0', GOOS: 'linux' } },
     });
 
     // Verify compilation command was executed
-    expect(execStub).to.have.been.calledWith(
-      `go build -ldflags="-s -w" -o .bin/testFunc1 functions/func1/main.go`,
-      {
-        cwd: ".",
-        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
-      },
-    );
+    expect(execStub).to.have.been.calledWith(`go build -ldflags="-s -w" -o .bin/testFunc1 functions/func1/main.go`, {
+      cwd: '.',
+      env: { ...process.env, ...{ CGO_ENABLED: '0', GOOS: 'linux' } },
+    });
 
     // Total calls should be 3: 2 beforeBuild commands + 1 compilation command
     expect(execStub.callCount).to.equal(3);
