@@ -1,14 +1,12 @@
-const fs = require("fs");
-const cp = require("child_process");
-const util = require("util");
+const fs = require('fs');
+const cp = require('child_process');
+const util = require('util');
 
 const execAsync = util.promisify(cp.exec);
 const basePath = `${__dirname}/..`;
 
 const updateDeps = async () => {
-  const pkgData = JSON.parse(
-    fs.readFileSync(`${basePath}/package.json`, "utf8"),
-  );
+  const pkgData = JSON.parse(fs.readFileSync(`${basePath}/package.json`, 'utf8'));
 
   if (pkgData.dependencies) {
     await processPkgSet(pkgData.dependencies);
@@ -39,17 +37,17 @@ const exec = async (cmd, cwd) => {
 };
 
 const updatePackage = async (pkgName, cwd, dev = false) => {
-  let cmd = ["npm", "i"];
+  let cmd = ['npm', 'i'];
 
   if (dev) {
-    cmd.push("--save-dev");
+    cmd.push('--save-dev');
   } else {
-    cmd.push("--save");
+    cmd.push('--save');
   }
 
   cmd.push(pkgName);
 
-  const cmdStr = cmd.join(" ");
+  const cmdStr = cmd.join(' ');
   console.log(cmdStr);
 
   await exec(cmdStr, cwd);

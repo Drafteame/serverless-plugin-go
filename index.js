@@ -1,16 +1,16 @@
-import util from "util";
-import cp from "child_process";
-import prettyHrtime from "pretty-hrtime";
-import chalk from "chalk";
-import path from "path";
-import plimit from "p-limit";
-import AdmZip from "adm-zip";
-import { readFileSync } from "fs";
+import util from 'util';
+import cp from 'child_process';
+import prettyHrtime from 'pretty-hrtime';
+import chalk from 'chalk';
+import path from 'path';
+import plimit from 'p-limit';
+import AdmZip from 'adm-zip';
+import { readFileSync } from 'fs';
 
 // SupportedRuntimes Runtimes that are allowed to run Golang lambdas.
-const supportedRuntimes = ["provided.al2"];
+const supportedRuntimes = ['provided.al2'];
 
-const logPrefix = "GoPlugin";
+const logPrefix = 'GoPlugin';
 
 export default class Go {
   constructor(serverless, options) {
@@ -22,11 +22,11 @@ export default class Go {
     this.options = options || {};
 
     this.defaultConfig = {
-      baseDir: ".",
-      binDir: ".bin",
+      baseDir: '.',
+      binDir: '.bin',
       env: {
-        CGO_ENABLED: "0",
-        GOOS: "linux",
+        CGO_ENABLED: '0',
+        GOOS: 'linux',
       },
       cmd: 'go build -ldflags="-s -w"',
       monorepo: false,
@@ -37,24 +37,23 @@ export default class Go {
     this.config = this.getConfig();
 
     this.hooks = {
-      "before:deploy:function:packageFunction": this.compileFunction.bind(this),
-      "before:package:createDeploymentArtifacts":
-        this.compileFunctions.bind(this),
+      'before:deploy:function:packageFunction': this.compileFunction.bind(this),
+      'before:package:createDeploymentArtifacts': this.compileFunctions.bind(this),
 
       // Because of https://github.com/serverless/serverless/blob/master/lib/plugins/aws/invokeLocal/index.js#L361
       // plugin needs to compile a function and then ignore packaging.
-      "before:invoke:local:invoke": this.compileToInvoke.bind(this),
-      "go:build:build": this.compileFunctions.bind(this),
+      'before:invoke:local:invoke': this.compileToInvoke.bind(this),
+      'go:build:build': this.compileFunctions.bind(this),
     };
 
     this.commands = {
       go: {
-        usage: "Manage Go functions",
-        lifecycleEvents: ["go"],
+        usage: 'Manage Go functions',
+        lifecycleEvents: ['go'],
         commands: {
           build: {
-            usage: "Build all Go functions",
-            lifecycleEvents: ["build"],
+            usage: 'Build all Go functions',
+            lifecycleEvents: ['build'],
           },
         },
       },
@@ -85,7 +84,7 @@ export default class Go {
    * Load all configured functions and execute compilation according it's configuration.
    */
   async compileFunctions() {
-    let names = Object.keys(this.serverless.service.functions);
+    const names = Object.keys(this.serverless.service.functions);
 
     this.logInfo(`Starting compilation...`);
 
@@ -98,7 +97,7 @@ export default class Go {
 
     const limit = plimit(this.config.concurrency);
 
-    let compiles = names.map((funcName) => {
+    const compiles = names.map((funcName) => {
       const func = this.serverless.service.functions[funcName];
       return limit(() => this.compile(funcName, func));
     });
@@ -141,7 +140,7 @@ export default class Go {
    * @throws {Error} if compilation command fails
    */
   async compile(name, func, artifact = true) {
-    const config = this.config;
+    const { config } = this;
     const arch = this.getFunctionArch(name);
     const runtime = this.getFunctionRuntime(name);
 
@@ -149,8 +148,8 @@ export default class Go {
       return;
     }
 
-    if (arch === "arm64") {
-      config.env["GOARCH"] = "arm64";
+    if (arch === 'arm64') {
+      config.env.GOARCH = 'arm64';
     }
 
     const absHandler = path.resolve(config.baseDir);
@@ -158,13 +157,13 @@ export default class Go {
 
     let compileBinPath = path.join(path.relative(absHandler, absBin), name); // binPath is based on cwd no baseDir
     let cwd = config.baseDir;
-    let handler = func.handler;
+    let { handler } = func;
 
     if (config.monorepo) {
       cwd = path.relative(absHandler, func.handler);
-      handler = ".";
+      handler = '.';
 
-      if (func.handler.endsWith(".go")) {
+      if (func.handler.endsWith('.go')) {
         cwd = path.relative(absHandler, path.dirname(func.handler));
         handler = path.basename(func.handler);
       }
@@ -176,21 +175,14 @@ export default class Go {
     this.logDebug(`[${name}] cwd: ${cwd}`);
     this.logDebug(`[${name}] arch: ${arch}`);
 
-    await this.execCompilation(
-      config.cmd,
-      compileBinPath,
-      handler,
-      cwd,
-      config.env,
-      arch,
-    );
+    await this.execCompilation(config.cmd, compileBinPath, handler, cwd, config.env, arch);
 
     this.logInfo(`Compiled function: ${chalk.magenta(name)}`);
 
     let binPath = path.join(config.binDir, name);
 
-    if (process.platform === "win32") {
-      binPath = binPath.replace(/\\/g, "/");
+    if (process.platform === 'win32') {
+      binPath = binPath.replace(/\\/g, '/');
     }
 
     this.serverless.service.functions[name].handler = binPath;
@@ -211,19 +203,15 @@ export default class Go {
       return;
     }
 
-    const execOpts = { cwd: cwd, env: { ...process.env, ...env } };
+    const execOpts = { cwd, env: { ...process.env, ...env } };
 
     for (const cmd of this.config.beforeBuild) {
       this.logDebug(`Executing beforeBuild command: ${cmd}`);
       try {
         await this.exec(cmd, execOpts);
       } catch (e) {
-        this.logError(
-          `Error executing beforeBuild command (cwd: ${cwd}): ${e.message}`,
-        );
-        throw new Error(
-          `error executing beforeBuild command '${cmd}' (cwd: ${cwd})`,
-        );
+        this.logError(`Error executing beforeBuild command (cwd: ${cwd}): ${e.message}`);
+        throw new Error(`error executing beforeBuild command '${cmd}' (cwd: ${cwd})`);
       }
     }
   }
@@ -239,9 +227,9 @@ export default class Go {
    * @param {string} arch Compilation architecture
    */
   async execCompilation(cmd, out, main, cwd, env, arch) {
-    let command = `${cmd} -o ${out} ${main}`;
+    const command = `${cmd} -o ${out} ${main}`;
 
-    let execOpts = { cwd: cwd, env: { ...process.env, ...env } };
+    const execOpts = { cwd, env: { ...process.env, ...env } };
 
     try {
       await this.exec(command, execOpts);
@@ -260,9 +248,9 @@ export default class Go {
    * @return {void} This method does not return any value.
    */
   packageBootstrap(name, binPath) {
-    this.zip.addFile("bootstrap", this.readFileSync(binPath), "", 0o755);
+    this.zip.addFile('bootstrap', this.readFileSync(binPath), '', 0o755);
 
-    const zipPath = binPath + ".zip";
+    const zipPath = `${binPath}.zip`;
     this.zip.writeZip(zipPath);
 
     this.serverless.service.functions[name].package = {
@@ -280,18 +268,17 @@ export default class Go {
    */
   getConfig() {
     let config = { ...this.defaultConfig };
-    const service = this.serverless.service;
+    const { service } = this.serverless;
 
     if (service.custom && service.custom.go) {
       config = { ...config, ...service.custom.go };
     }
 
-    for (let env of Object.keys(config.env)) {
+    for (const env of Object.keys(config.env)) {
       config.env[env] = `${config.env[env]}`;
     }
 
-    config.concurrency =
-      parseInt(process.env.SP_GO_CONCURRENCY) || config.concurrency;
+    config.concurrency = parseInt(process.env.SP_GO_CONCURRENCY) || config.concurrency;
 
     return config;
   }
@@ -305,9 +292,9 @@ export default class Go {
    */
   getFunctionArch(funcName) {
     const funcConf = this.serverless.service.functions[funcName];
-    const provider = this.serverless.service.provider;
+    const { provider } = this.serverless.service;
 
-    let arch = provider.architecture || "x86_64";
+    let arch = provider.architecture || 'x86_64';
 
     if (funcConf.architecture) {
       arch = funcConf.architecture;
@@ -325,9 +312,9 @@ export default class Go {
    */
   getFunctionRuntime(funcName) {
     const funcConf = this.serverless.service.functions[funcName];
-    const provider = this.serverless.service.provider;
+    const { provider } = this.serverless.service;
 
-    let runtime = provider.runtime;
+    let { runtime } = provider;
 
     if (funcConf.runtime) {
       runtime = funcConf.runtime;

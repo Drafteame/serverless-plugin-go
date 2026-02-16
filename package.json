@@ -39,24 +39,19 @@
   },
   "homepage": "https://github.com/Drafteame/serverless-plugin-go#readme",
   "dependencies": {
-    "adm-zip": "^0.5.10",
-    "chalk": "^5.3.0",
-    "p-limit": "^5.0.0",
-    "pretty-hrtime": "^1.0.3",
-    "util": "^0.12.5"
+    "adm-zip": "^0.5.16",
+    "chalk": "^5.6.2",
+    "p-limit": "^7.3.0",
+    "pretty-hrtime": "^1.0.3"
   },
   "devDependencies": {
-    "chai": "^4.3.10",
-    "child_process": "^1.0.2",
-    "eslint": "^8.52.0",
-    "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-config-prettier": "^9.0.0",
-    "eslint-plugin-import": "^2.29.0",
-    "eslint-plugin-prettier": "^5.0.1",
-    "fs": "^0.0.1-security",
-    "mocha": "^10.2.0",
-    "prettier": "^3.0.3",
-    "sinon": "^17.0.0",
-    "sinon-chai": "^3.7.0"
+    "chai": "^6.2.2",
+    "eslint": "^9.0.0",
+    "eslint-config-airbnb-extended": "^3.0.1",
+    "eslint-config-prettier": "^10.1.8",
+    "mocha": "^11.7.5",
+    "prettier": "^3.8.1",
+    "sinon": "^21.0.1",
+    "sinon-chai": "^4.0.1"
   }
 }

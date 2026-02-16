@@ -14,7 +14,7 @@ jobs:
       - name: Install NodeJS
         uses: actions/setup-node@v3
         with:
-          node-version: "20"
+          node-version: '20'
 
       - name: Install dependencies
         run: npm install
@@ -32,7 +32,7 @@ jobs:
       - name: Install NodeJS
         uses: actions/setup-node@v3
         with:
-          node-version: "20"
+          node-version: '20'
 
       - name: Install dependencies
         run: npm install
@@ -40,14 +40,13 @@ jobs:
       - name: Lint
         run: npm run test
 
-
   commit_lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3.3.0
         with:
-          token: "${{ secrets.ACCESS_TOKEN }}"
+          token: '${{ secrets.ACCESS_TOKEN }}'
           fetch-depth: 0
 
       - name: Setup Python

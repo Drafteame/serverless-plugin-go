@@ -1,6 +1,6 @@
-import sinon from "sinon";
+import sinon from 'sinon';
 
-import ServiceMock from "./service.mock.js";
+import ServiceMock from './service.mock.js';
 
 export default class ServerlessMock {
   constructor() {
