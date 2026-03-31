@@ -57,6 +57,16 @@ describe("Go Plugin", () => {
         runtime: "go1.x",
         handler: "functions/func4",
       },
+      testFunc5: {
+        name: "testFunc5",
+        runtime: "provided.al2023",
+        handler: "functions/func5/main.go",
+      },
+      testFunc6: {
+        name: "testFunc6",
+        runtime: "provided.al2023",
+        handler: "functions/func6",
+      },
     });
 
     const plugin = new Go(config);
@@ -86,6 +96,30 @@ describe("Go Plugin", () => {
 
     expect(execStub).to.have.been.calledWith(
       `go build -ldflags="-s -w" -o .bin/testFunc3 functions/func3`,
+      {
+        cwd: ".",
+        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+      },
+    );
+
+    expect(config.service.functions.testFunc5.handler).to.equal(
+      `.bin/testFunc5`,
+    );
+
+    expect(execStub).to.have.been.calledWith(
+      `go build -ldflags="-s -w" -o .bin/testFunc5 functions/func5/main.go`,
+      {
+        cwd: ".",
+        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+      },
+    );
+
+    expect(config.service.functions.testFunc6.handler).to.equal(
+      `.bin/testFunc6`,
+    );
+
+    expect(execStub).to.have.been.calledWith(
+      `go build -ldflags="-s -w" -o .bin/testFunc6 functions/func6`,
       {
         cwd: ".",
         env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
@@ -223,6 +257,30 @@ describe("Go Plugin", () => {
     config.service
       .setProvider({
         runtime: "provided.al2",
+      })
+      .setFunctions({
+        testFunc1: {
+          name: "testFunc1",
+          handler: "functions/func1/main.go",
+        },
+      });
+
+    const plugin = new Go(config);
+    plugin.exec = execStub;
+    plugin.readFileSync = readFileSyncStub;
+    plugin.zip = admZipStub;
+
+    // when
+    await plugin.hooks["before:package:createDeploymentArtifacts"]();
+
+    // then
+    expect(execStub).to.have.been.calledOnce;
+  });
+
+  it("Compiles Go function with global runtime provided.al2023 defined", async () => {
+    config.service
+      .setProvider({
+        runtime: "provided.al2023",
       })
       .setFunctions({
         testFunc1: {
