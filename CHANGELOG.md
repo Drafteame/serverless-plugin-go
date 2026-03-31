@@ -1,3 +1,9 @@
+## v0.1.2 (2026-03-31)
+
+
+- chore: add support for provided.al2023 runtime (#11)
+- Co-authored-by: Ariel Santos <ariel.santos@draftea.com>
+
 ## v0.1.1 (2026-01-21)
 
 
