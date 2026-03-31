@@ -8,7 +8,7 @@ import AdmZip from "adm-zip";
 import { readFileSync } from "fs";
 
 // SupportedRuntimes Runtimes that are allowed to run Golang lambdas.
-const supportedRuntimes = ["provided.al2"];
+const supportedRuntimes = ["provided.al2", "provided.al2023"];
 
 const logPrefix = "GoPlugin";
 

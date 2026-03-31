@@ -31,7 +31,7 @@
     ```yaml
     functions:
       example:
-        runtime: 'provided.al2'
+        runtime: 'provided.al2023' # or provided.al2
         handler: 'functions/example/main.go' # or just functions/example
     ```
 
@@ -87,7 +87,7 @@ Change architecture field from `provider` or function configuration to `arm64`:
 ```yaml
 provider:
   architecture: 'arm64'
-  runtime: 'provided.al2'
+  runtime: 'provided.al2023' # or provided.al2
 
 # If you define architecture at function level, this will have preference instead the provider configuration
 
