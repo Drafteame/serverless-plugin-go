@@ -12,6 +12,9 @@ const supportedRuntimes = ["provided.al2", "provided.al2023"];
 
 const logPrefix = "GoPlugin";
 
+// DOS zip timestamps can't go before 1980.
+const zipEpoch = new Date(1980, 0, 1);
+
 export default class Go {
   constructor(serverless, options) {
     this.readFileSync = readFileSync;
@@ -149,9 +152,12 @@ export default class Go {
       return;
     }
 
-    if (arch === "arm64") {
-      config.env["GOARCH"] = "arm64";
-    }
+    // Per-function env: never mutate shared config, and always set GOARCH so the
+    // host arch (e.g. Apple Silicon) never leaks into an x86_64 Lambda.
+    const env = {
+      ...config.env,
+      GOARCH: arch === "arm64" ? "arm64" : "amd64",
+    };
 
     const absHandler = path.resolve(config.baseDir);
     const absBin = path.resolve(config.binDir);
@@ -172,7 +178,7 @@ export default class Go {
       compileBinPath = path.relative(cwd, compileBinPath);
     }
 
-    this.logDebug(`[${name}] env: ${JSON.stringify(config.env)}`);
+    this.logDebug(`[${name}] env: ${JSON.stringify(env)}`);
     this.logDebug(`[${name}] cwd: ${cwd}`);
     this.logDebug(`[${name}] arch: ${arch}`);
 
@@ -181,7 +187,7 @@ export default class Go {
       compileBinPath,
       handler,
       cwd,
-      config.env,
+      env,
       arch,
     );
 
@@ -261,6 +267,8 @@ export default class Go {
    */
   packageBootstrap(name, binPath) {
     this.zip.addFile("bootstrap", this.readFileSync(binPath), "", 0o755);
+    // Fixed mtime so identical binaries produce byte-identical zips (stable hashes).
+    this.zip.getEntry("bootstrap").header.time = zipEpoch;
 
     const zipPath = binPath + ".zip";
     this.zip.writeZip(zipPath);
