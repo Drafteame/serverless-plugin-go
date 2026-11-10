@@ -2,6 +2,11 @@ import sinon from "sinon";
 import chai from "chai";
 import sinonChai from "sinon-chai";
 
+import AdmZip from "adm-zip";
+import fs from "fs";
+import os from "os";
+import path from "path";
+
 import Go from "./index.js";
 import ServerlessMock from "./mocks/serverless.mock.js";
 
@@ -27,6 +32,7 @@ describe("Go Plugin", () => {
     admZipStub = {
       addFile: sinon.stub(),
       writeZip: sinon.stub(),
+      getEntry: sinon.stub().returns({ header: {} }),
     };
   });
 
@@ -86,7 +92,10 @@ describe("Go Plugin", () => {
       `go build -ldflags="-s -w" -o .bin/testFunc2 functions/func2/main.go`,
       {
         cwd: ".",
-        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+        env: {
+          ...process.env,
+          ...{ CGO_ENABLED: "0", GOOS: "linux", GOARCH: "amd64" },
+        },
       },
     );
 
@@ -98,7 +107,10 @@ describe("Go Plugin", () => {
       `go build -ldflags="-s -w" -o .bin/testFunc3 functions/func3`,
       {
         cwd: ".",
-        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+        env: {
+          ...process.env,
+          ...{ CGO_ENABLED: "0", GOOS: "linux", GOARCH: "amd64" },
+        },
       },
     );
 
@@ -110,7 +122,10 @@ describe("Go Plugin", () => {
       `go build -ldflags="-s -w" -o .bin/testFunc5 functions/func5/main.go`,
       {
         cwd: ".",
-        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+        env: {
+          ...process.env,
+          ...{ CGO_ENABLED: "0", GOOS: "linux", GOARCH: "amd64" },
+        },
       },
     );
 
@@ -122,7 +137,10 @@ describe("Go Plugin", () => {
       `go build -ldflags="-s -w" -o .bin/testFunc6 functions/func6`,
       {
         cwd: ".",
-        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+        env: {
+          ...process.env,
+          ...{ CGO_ENABLED: "0", GOOS: "linux", GOARCH: "amd64" },
+        },
       },
     );
   });
@@ -155,7 +173,10 @@ describe("Go Plugin", () => {
       `go build -o .bin/testFunc1 functions/func1/main.go`,
       {
         cwd: ".",
-        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+        env: {
+          ...process.env,
+          ...{ CGO_ENABLED: "0", GOOS: "linux", GOARCH: "amd64" },
+        },
       },
     );
   });
@@ -222,7 +243,10 @@ describe("Go Plugin", () => {
       `go build -ldflags="-s -w" -o ../.bin/testFunc1 functions/func1/main.go`,
       {
         cwd: "gopath",
-        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+        env: {
+          ...process.env,
+          ...{ CGO_ENABLED: "0", GOOS: "linux", GOARCH: "amd64" },
+        },
       },
     );
   });
@@ -323,7 +347,10 @@ describe("Go Plugin", () => {
       `go build -ldflags="-s -w" -o .bin/testFunc1 functions/func1/main.go`,
       {
         cwd: ".",
-        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+        env: {
+          ...process.env,
+          ...{ CGO_ENABLED: "0", GOOS: "linux", GOARCH: "amd64" },
+        },
       },
     );
   });
@@ -365,7 +392,10 @@ describe("Go Plugin", () => {
       `go build -ldflags="-s -w" -o ../../.bin/testFunc1 .`,
       {
         cwd: "functions/func1",
-        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+        env: {
+          ...process.env,
+          ...{ CGO_ENABLED: "0", GOOS: "linux", GOARCH: "amd64" },
+        },
       },
     );
 
@@ -377,7 +407,10 @@ describe("Go Plugin", () => {
       `go build -ldflags="-s -w" -o ../../.bin/testFunc2 main.go`,
       {
         cwd: "functions/func2",
-        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+        env: {
+          ...process.env,
+          ...{ CGO_ENABLED: "0", GOOS: "linux", GOARCH: "amd64" },
+        },
       },
     );
   });
@@ -503,14 +536,20 @@ describe("Go Plugin", () => {
       `go build -ldflags="-s -w" -o .bin/testFunc1 functions/func1/main.go`,
       {
         cwd: ".",
-        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+        env: {
+          ...process.env,
+          ...{ CGO_ENABLED: "0", GOOS: "linux", GOARCH: "amd64" },
+        },
       },
     );
     expect(execStub).to.have.been.calledWith(
       `go build -ldflags="-s -w" -o .bin/testFunc2 functions/func2/main.go`,
       {
         cwd: ".",
-        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+        env: {
+          ...process.env,
+          ...{ CGO_ENABLED: "0", GOOS: "linux", GOARCH: "amd64" },
+        },
       },
     );
 
@@ -557,7 +596,10 @@ describe("Go Plugin", () => {
       `go build -ldflags="-s -w" -o .bin/testFunc1 functions/func1/main.go`,
       {
         cwd: ".",
-        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+        env: {
+          ...process.env,
+          ...{ CGO_ENABLED: "0", GOOS: "linux", GOARCH: "amd64" },
+        },
       },
     );
 
@@ -604,11 +646,62 @@ describe("Go Plugin", () => {
       `go build -ldflags="-s -w" -o .bin/testFunc1 functions/func1/main.go`,
       {
         cwd: ".",
-        env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+        env: {
+          ...process.env,
+          ...{ CGO_ENABLED: "0", GOOS: "linux", GOARCH: "amd64" },
+        },
       },
     );
 
     // Total calls should be 3: 2 beforeBuild commands + 1 compilation command
     expect(execStub.callCount).to.equal(3);
   });
+  it("Does not leak arm64 GOARCH into x86_64 functions", async () => {
+    config.service.setFunctions({
+      armFunc: {
+        name: "armFunc",
+        runtime: "provided.al2023",
+        architecture: "arm64",
+        handler: "functions/arm",
+      },
+      x86Func: {
+        name: "x86Func",
+        runtime: "provided.al2023",
+        handler: "functions/x86",
+      },
+    });
+
+    const plugin = new Go(config);
+    plugin.exec = execStub;
+    plugin.readFileSync = readFileSyncStub;
+    plugin.zip = admZipStub;
+
+    await plugin.compileFunctions();
+
+    const envOf = (bin) =>
+      execStub.getCalls().find((c) => c.args[0].includes(bin)).args[1].env;
+    expect(envOf(".bin/armFunc").GOARCH).to.equal("arm64");
+    expect(envOf(".bin/x86Func").GOARCH).to.equal("amd64");
+    expect(plugin.config.env.GOARCH).to.equal(undefined);
+  });
+
+  it("Produces byte-identical zips for identical binaries", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "sp-go-"));
+    const bin = path.join(dir, "fn");
+    fs.writeFileSync(bin, "fake binary content");
+    config.service.setFunctions({ fn: { name: "fn", handler: "fn" } });
+
+    const plugin = new Go(config);
+    plugin.zip = new AdmZip();
+
+    plugin.packageBootstrap("fn", bin);
+    const first = fs.readFileSync(bin + ".zip");
+    await new Promise((r) => setTimeout(r, 2100)); // DOS mtime has 2s resolution
+    plugin.zip = new AdmZip();
+    plugin.packageBootstrap("fn", bin);
+    const second = fs.readFileSync(bin + ".zip");
+
+    fs.rmSync(dir, { recursive: true });
+    expect(first.equals(second)).to.equal(true);
+  }).timeout(5000);
 });
