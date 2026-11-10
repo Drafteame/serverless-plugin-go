@@ -2,6 +2,10 @@ import sinon from "sinon";
 import chai from "chai";
 import sinonChai from "sinon-chai";
 
+import { mkdtempSync, readFileSync, writeFileSync } from "fs";
+import { tmpdir } from "os";
+import path from "path";
+
 import Go from "./index.js";
 import ServerlessMock from "./mocks/serverless.mock.js";
 
@@ -25,7 +29,7 @@ describe("Go Plugin", () => {
       .returns("fake binary content");
 
     admZipStub = {
-      addFile: sinon.stub(),
+      addFile: sinon.stub().returns({ header: {} }),
       writeZip: sinon.stub(),
     };
   });
@@ -610,5 +614,39 @@ describe("Go Plugin", () => {
 
     // Total calls should be 3: 2 beforeBuild commands + 1 compilation command
     expect(execStub.callCount).to.equal(3);
+  });
+
+  it("Packages the same binary into identical zips across builds", () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "go-plugin-"));
+    const binPath = path.join(dir, "testFunc1");
+    writeFileSync(binPath, "fake binary content");
+
+    const packageAt = (isoTime) => {
+      const clock = sinon.useFakeTimers(new Date(isoTime));
+
+      try {
+        config.service.setFunctions({
+          testFunc1: {
+            name: "testFunc1",
+            runtime: "provided.al2023",
+            handler: "functions/func1/main.go",
+          },
+        });
+
+        const plugin = new Go(config);
+        plugin.packageBootstrap("testFunc1", binPath);
+
+        return readFileSync(binPath + ".zip");
+      } finally {
+        clock.restore();
+      }
+    };
+
+    // when
+    const first = packageAt("2026-01-01T10:00:00Z");
+    const second = packageAt("2026-01-01T15:30:00Z");
+
+    // then
+    expect(Buffer.compare(first, second)).to.equal(0);
   });
 });

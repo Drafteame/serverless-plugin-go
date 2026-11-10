@@ -12,6 +12,12 @@ const supportedRuntimes = ["provided.al2", "provided.al2023"];
 
 const logPrefix = "GoPlugin";
 
+// Fixed modification time for the zip entry. AdmZip stamps the current time by default, so the
+// same binary would produce a different zip on every build. Serverless hashes the artifact to
+// decide whether to publish a new Lambda version, so a moving timestamp republishes every
+// function on every deploy. 1980-01-01 is the earliest date the zip (DOS) format can hold.
+const zipEntryTime = new Date(1980, 0, 1);
+
 export default class Go {
   constructor(serverless, options) {
     this.readFileSync = readFileSync;
@@ -260,7 +266,13 @@ export default class Go {
    * @return {void} This method does not return any value.
    */
   packageBootstrap(name, binPath) {
-    this.zip.addFile("bootstrap", this.readFileSync(binPath), "", 0o755);
+    const entry = this.zip.addFile(
+      "bootstrap",
+      this.readFileSync(binPath),
+      "",
+      0o755,
+    );
+    entry.header.time = zipEntryTime;
 
     const zipPath = binPath + ".zip";
     this.zip.writeZip(zipPath);
