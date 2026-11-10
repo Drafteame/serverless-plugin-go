@@ -1,3 +1,15 @@
+## v0.1.3 (2026-11-10)
+
+
+- fix: per-function GOARCH and deterministic zip artifacts (#12)
+- - Build env is now computed per function with an explicit GOARCH
+  (arm64/amd64). Previously config.env was mutated, so once an arm64
+  function compiled, every following x86_64 function was built as ARM,
+  and x86_64 builds on Apple Silicon used the host arch.
+- Zip entries use a fixed mtime so identical binaries yield
+  byte-identical artifacts (stable hashes across builds).
+- Bump mocha 10 -> 12 (mocha 10 fails to start on Node 26).
+
 ## v0.1.2 (2026-03-31)
 
 
