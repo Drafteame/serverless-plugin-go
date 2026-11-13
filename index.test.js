@@ -94,7 +94,12 @@ describe("Go Plugin", () => {
         cwd: ".",
         env: {
           ...process.env,
-          ...{ CGO_ENABLED: "0", GOOS: "linux", GOARCH: "amd64" },
+          ...{
+            CGO_ENABLED: "0",
+            GOOS: "linux",
+            GOFLAGS: "-trimpath -buildvcs=false",
+            GOARCH: "amd64",
+          },
         },
       },
     );
@@ -109,7 +114,12 @@ describe("Go Plugin", () => {
         cwd: ".",
         env: {
           ...process.env,
-          ...{ CGO_ENABLED: "0", GOOS: "linux", GOARCH: "amd64" },
+          ...{
+            CGO_ENABLED: "0",
+            GOOS: "linux",
+            GOFLAGS: "-trimpath -buildvcs=false",
+            GOARCH: "amd64",
+          },
         },
       },
     );
@@ -124,7 +134,12 @@ describe("Go Plugin", () => {
         cwd: ".",
         env: {
           ...process.env,
-          ...{ CGO_ENABLED: "0", GOOS: "linux", GOARCH: "amd64" },
+          ...{
+            CGO_ENABLED: "0",
+            GOOS: "linux",
+            GOFLAGS: "-trimpath -buildvcs=false",
+            GOARCH: "amd64",
+          },
         },
       },
     );
@@ -139,7 +154,12 @@ describe("Go Plugin", () => {
         cwd: ".",
         env: {
           ...process.env,
-          ...{ CGO_ENABLED: "0", GOOS: "linux", GOARCH: "amd64" },
+          ...{
+            CGO_ENABLED: "0",
+            GOOS: "linux",
+            GOFLAGS: "-trimpath -buildvcs=false",
+            GOARCH: "amd64",
+          },
         },
       },
     );
@@ -175,7 +195,12 @@ describe("Go Plugin", () => {
         cwd: ".",
         env: {
           ...process.env,
-          ...{ CGO_ENABLED: "0", GOOS: "linux", GOARCH: "amd64" },
+          ...{
+            CGO_ENABLED: "0",
+            GOOS: "linux",
+            GOFLAGS: "-trimpath -buildvcs=false",
+            GOARCH: "amd64",
+          },
         },
       },
     );
@@ -209,7 +234,12 @@ describe("Go Plugin", () => {
         cwd: ".",
         env: {
           ...process.env,
-          ...{ CGO_ENABLED: "0", GOOS: "linux", GOARCH: "arm64" },
+          ...{
+            CGO_ENABLED: "0",
+            GOOS: "linux",
+            GOFLAGS: "-trimpath -buildvcs=false",
+            GOARCH: "arm64",
+          },
         },
       },
     );
@@ -245,7 +275,12 @@ describe("Go Plugin", () => {
         cwd: "gopath",
         env: {
           ...process.env,
-          ...{ CGO_ENABLED: "0", GOOS: "linux", GOARCH: "amd64" },
+          ...{
+            CGO_ENABLED: "0",
+            GOOS: "linux",
+            GOFLAGS: "-trimpath -buildvcs=false",
+            GOARCH: "amd64",
+          },
         },
       },
     );
@@ -349,7 +384,12 @@ describe("Go Plugin", () => {
         cwd: ".",
         env: {
           ...process.env,
-          ...{ CGO_ENABLED: "0", GOOS: "linux", GOARCH: "amd64" },
+          ...{
+            CGO_ENABLED: "0",
+            GOOS: "linux",
+            GOFLAGS: "-trimpath -buildvcs=false",
+            GOARCH: "amd64",
+          },
         },
       },
     );
@@ -394,7 +434,12 @@ describe("Go Plugin", () => {
         cwd: "functions/func1",
         env: {
           ...process.env,
-          ...{ CGO_ENABLED: "0", GOOS: "linux", GOARCH: "amd64" },
+          ...{
+            CGO_ENABLED: "0",
+            GOOS: "linux",
+            GOFLAGS: "-trimpath -buildvcs=false",
+            GOARCH: "amd64",
+          },
         },
       },
     );
@@ -409,7 +454,12 @@ describe("Go Plugin", () => {
         cwd: "functions/func2",
         env: {
           ...process.env,
-          ...{ CGO_ENABLED: "0", GOOS: "linux", GOARCH: "amd64" },
+          ...{
+            CGO_ENABLED: "0",
+            GOOS: "linux",
+            GOFLAGS: "-trimpath -buildvcs=false",
+            GOARCH: "amd64",
+          },
         },
       },
     );
@@ -436,6 +486,19 @@ describe("Go Plugin", () => {
     expect(config.service.functions.testFunc1.handler).to.equal(
       `.bin/testFunc1`,
     );
+  });
+
+  it("Merges custom env with default env", async () => {
+    config.service.setCustom({ go: { env: { FOO: "x" } } });
+
+    const plugin = new Go(config);
+
+    expect(plugin.config.env).to.deep.equal({
+      CGO_ENABLED: "0",
+      GOOS: "linux",
+      GOFLAGS: "-trimpath -buildvcs=false",
+      FOO: "x",
+    });
   });
 
   it("Should get concurrency config", async () => {
@@ -524,11 +587,25 @@ describe("Go Plugin", () => {
     // Verify beforeBuild commands were executed once
     expect(execStub).to.have.been.calledWith("echo 'before build command'", {
       cwd: ".",
-      env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+      env: {
+        ...process.env,
+        ...{
+          CGO_ENABLED: "0",
+          GOOS: "linux",
+          GOFLAGS: "-trimpath -buildvcs=false",
+        },
+      },
     });
     expect(execStub).to.have.been.calledWith("go mod tidy", {
       cwd: ".",
-      env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+      env: {
+        ...process.env,
+        ...{
+          CGO_ENABLED: "0",
+          GOOS: "linux",
+          GOFLAGS: "-trimpath -buildvcs=false",
+        },
+      },
     });
 
     // Verify compilation commands were executed for each function
@@ -538,7 +615,12 @@ describe("Go Plugin", () => {
         cwd: ".",
         env: {
           ...process.env,
-          ...{ CGO_ENABLED: "0", GOOS: "linux", GOARCH: "amd64" },
+          ...{
+            CGO_ENABLED: "0",
+            GOOS: "linux",
+            GOFLAGS: "-trimpath -buildvcs=false",
+            GOARCH: "amd64",
+          },
         },
       },
     );
@@ -548,7 +630,12 @@ describe("Go Plugin", () => {
         cwd: ".",
         env: {
           ...process.env,
-          ...{ CGO_ENABLED: "0", GOOS: "linux", GOARCH: "amd64" },
+          ...{
+            CGO_ENABLED: "0",
+            GOOS: "linux",
+            GOFLAGS: "-trimpath -buildvcs=false",
+            GOARCH: "amd64",
+          },
         },
       },
     );
@@ -584,11 +671,25 @@ describe("Go Plugin", () => {
     // Verify beforeBuild commands were executed once
     expect(execStub).to.have.been.calledWith("echo 'before build command'", {
       cwd: ".",
-      env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+      env: {
+        ...process.env,
+        ...{
+          CGO_ENABLED: "0",
+          GOOS: "linux",
+          GOFLAGS: "-trimpath -buildvcs=false",
+        },
+      },
     });
     expect(execStub).to.have.been.calledWith("go mod tidy", {
       cwd: ".",
-      env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+      env: {
+        ...process.env,
+        ...{
+          CGO_ENABLED: "0",
+          GOOS: "linux",
+          GOFLAGS: "-trimpath -buildvcs=false",
+        },
+      },
     });
 
     // Verify the compilation command was executed
@@ -598,7 +699,12 @@ describe("Go Plugin", () => {
         cwd: ".",
         env: {
           ...process.env,
-          ...{ CGO_ENABLED: "0", GOOS: "linux", GOARCH: "amd64" },
+          ...{
+            CGO_ENABLED: "0",
+            GOOS: "linux",
+            GOFLAGS: "-trimpath -buildvcs=false",
+            GOARCH: "amd64",
+          },
         },
       },
     );
@@ -634,11 +740,25 @@ describe("Go Plugin", () => {
     // Verify beforeBuild commands were executed once
     expect(execStub).to.have.been.calledWith("echo 'before build command'", {
       cwd: ".",
-      env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+      env: {
+        ...process.env,
+        ...{
+          CGO_ENABLED: "0",
+          GOOS: "linux",
+          GOFLAGS: "-trimpath -buildvcs=false",
+        },
+      },
     });
     expect(execStub).to.have.been.calledWith("go mod tidy", {
       cwd: ".",
-      env: { ...process.env, ...{ CGO_ENABLED: "0", GOOS: "linux" } },
+      env: {
+        ...process.env,
+        ...{
+          CGO_ENABLED: "0",
+          GOOS: "linux",
+          GOFLAGS: "-trimpath -buildvcs=false",
+        },
+      },
     });
 
     // Verify compilation command was executed
@@ -648,7 +768,12 @@ describe("Go Plugin", () => {
         cwd: ".",
         env: {
           ...process.env,
-          ...{ CGO_ENABLED: "0", GOOS: "linux", GOARCH: "amd64" },
+          ...{
+            CGO_ENABLED: "0",
+            GOOS: "linux",
+            GOFLAGS: "-trimpath -buildvcs=false",
+            GOARCH: "amd64",
+          },
         },
       },
     );

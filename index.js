@@ -30,6 +30,7 @@ export default class Go {
       env: {
         CGO_ENABLED: "0",
         GOOS: "linux",
+        GOFLAGS: "-trimpath -buildvcs=false", // reproducible builds
       },
       cmd: 'go build -ldflags="-s -w"',
       monorepo: false,
@@ -291,7 +292,11 @@ export default class Go {
     const service = this.serverless.service;
 
     if (service.custom && service.custom.go) {
-      config = { ...config, ...service.custom.go };
+      config = {
+        ...config,
+        ...service.custom.go,
+        env: { ...config.env, ...service.custom.go.env },
+      };
     }
 
     for (let env of Object.keys(config.env)) {

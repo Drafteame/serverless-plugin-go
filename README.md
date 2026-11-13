@@ -62,6 +62,9 @@ custom:
     env:
       GOOS: 'linux' # Default compile OS
       CGO_ENABLED: '0' # By default CGO is disabled
+      GOFLAGS: '-trimpath -buildvcs=false' # Reproducible builds by default
+      # Variables you define are merged with these defaults; redefining one (e.g. GOFLAGS) replaces
+      # its whole value. These values also override any same-named variable from the shell.
       
     # Bash commands to execute before compilation
     # These commands will be executed once before all compilations
