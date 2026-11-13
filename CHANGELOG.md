@@ -1,3 +1,8 @@
+## v0.1.4 (2026-11-13)
+
+
+- fix: default GOFLAGS=-trimpath -buildvcs=false and merge custom env with defaults (#14)
+
 ## v0.1.3 (2026-11-10)
 
 
