@@ -1,10 +1,13 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { randomBytes } from "node:crypto";
+import { appendFileSync } from "node:fs";
 
-// Opt-in tracing: SP_GO_TRACE=1 turns it on, otherwise every call is a no-op.
+// Opt-in tracing: SP_GO_TRACE=1 (or the api CI contract, CI_OTEL_ENABLED=true /
+// DEPLOY_OTEL_ENABLED=true) turns it on, otherwise every call is a no-op.
 // Spans continue the W3C `traceparent` found in TRACEPARENT (if any) and are
-// exported as OTLP/HTTP JSON using the standard OTEL_EXPORTER_OTLP_* env vars.
-// ponytail: no SDK, no batching, one POST at the end of the run; tracing must
+// exported as OTLP/JSON, either appended as one line to CI_OTEL_FILE
+// (DEPLOY_OTEL_FILE), or POSTed using the standard OTEL_EXPORTER_OTLP_* vars.
+// ponytail: no SDK, no batching, one export at the end of the run; tracing must
 // never break a build, so every export error is swallowed.
 
 const traceparentRe = /^00-([0-9a-f]{32})-([0-9a-f]{16})-([0-9a-f]{2})$/;
@@ -15,14 +18,23 @@ const nowNano = () =>
   );
 
 // Allowlist only: never dump process.env into a public trace.
+// Same names as api's CI tracing, so the CI Visibility replay can place the
+// spans in their job (JOB_CHECK_RUN_ID -> cicd.pipeline.task.run.id).
 const ciEnvAttrs = {
-  GITHUB_REPOSITORY: "git.repository",
-  GITHUB_SHA: "git.commit.sha",
-  GITHUB_REF_NAME: "git.branch",
-  GITHUB_RUN_ID: "ci.pipeline.id",
-  GITHUB_RUN_ATTEMPT: "ci.pipeline.run_attempt",
-  GITHUB_JOB: "ci.job.name",
+  GITHUB_REPOSITORY: "vcs.repository.name",
+  GITHUB_SHA: "vcs.ref.head.revision",
+  GITHUB_REF_NAME: "vcs.ref.head.name",
+  GITHUB_WORKFLOW: "cicd.pipeline.name",
+  GITHUB_RUN_ID: "cicd.pipeline.run.id",
+  GITHUB_RUN_ATTEMPT: "cicd.pipeline.run.attempt",
+  GITHUB_JOB: "cicd.pipeline.task.name",
+  JOB_CHECK_RUN_ID: "cicd.pipeline.task.run.id",
+  GITHUB_ACTOR: "cicd.pipeline.run.actor",
+  RUNNER_NAME: "cicd.worker.name",
 };
+
+const truthy = (v = "") => /^(1|true|yes)$/i.test(v.trim());
+const first = (env, ...names) => names.map((n) => env[n]).find(Boolean) || "";
 
 function toValue(v) {
   if (typeof v === "boolean") return { boolValue: v };
@@ -50,7 +62,11 @@ function parseHeaders(raw = "") {
 const noopSpan = { enabled: false, set() {} };
 
 export function createTracer(env = process.env, resource = {}) {
-  if (!/^(1|true)$/i.test(env.SP_GO_TRACE || "")) {
+  if (
+    ![env.SP_GO_TRACE, env.CI_OTEL_ENABLED, env.DEPLOY_OTEL_ENABLED].some(
+      truthy,
+    )
+  ) {
     return {
       enabled: false,
       span: (name, attrs, fn) => fn(noopSpan),
@@ -78,6 +94,7 @@ export function createTracer(env = process.env, resource = {}) {
       spanId: hex(8),
       parentSpanId: parentId,
       name,
+      ...(env.TRACESTATE ? { traceState: env.TRACESTATE } : {}),
       kind: 1,
       startTimeUnixNano: nowNano(),
       attributes: { ...attrs },
@@ -142,6 +159,17 @@ export function createTracer(env = process.env, resource = {}) {
         },
       ],
     };
+    const file = first(env, "CI_OTEL_FILE", "DEPLOY_OTEL_FILE");
+    const exporter = first(env, "CI_OTEL_EXPORTER", "DEPLOY_OTEL_EXPORTER");
+    if (exporter === "file" || (!exporter && file)) {
+      try {
+        appendFileSync(file, `${JSON.stringify(body)}\n`);
+      } catch (e) {
+        onError(`trace export failed: ${e.message}`);
+      }
+      return;
+    }
+
     const base = (
       env.OTEL_EXPORTER_OTLP_ENDPOINT || "http://localhost:4318"
     ).replace(/\/$/, "");

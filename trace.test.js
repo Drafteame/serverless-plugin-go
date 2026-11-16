@@ -1,3 +1,6 @@
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { expect } from "chai";
 import sinon from "sinon";
 
@@ -84,5 +87,45 @@ describe("Tracer", () => {
     await t.flush(onError);
 
     expect(onError).to.have.been.calledOnceWith("trace export failed: down");
+  });
+
+  it("Appends one OTLP/JSON line to CI_OTEL_FILE with the api CI contract", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "sp-go-trace-"));
+    const file = join(dir, "otel.jsonl");
+    const env = {
+      CI_OTEL_ENABLED: "true",
+      CI_OTEL_FILE: file,
+      TRACEPARENT: tp,
+      JOB_CHECK_RUN_ID: "123",
+      GITHUB_RUN_ID: "9",
+      SECRET_TOKEN: "nope",
+    };
+
+    try {
+      for (const run of [1, 2]) {
+        const t = createTracer(env);
+        t.span(`run${run}`, {}, () => {});
+        await t.flush();
+      }
+
+      const lines = readFileSync(file, "utf8").trimEnd().split("\n");
+      expect(lines).to.have.length(2);
+      const doc = JSON.parse(lines[0]);
+      const attrs = Object.fromEntries(
+        doc.resourceSpans[0].resource.attributes.map((a) => [
+          a.key,
+          a.value.stringValue,
+        ]),
+      );
+      expect(attrs["cicd.pipeline.task.run.id"]).to.equal("123");
+      expect(attrs["cicd.pipeline.run.id"]).to.equal("9");
+      expect(lines[0]).not.to.include("nope");
+      expect(doc.resourceSpans[0].scopeSpans[0].spans[0].parentSpanId).to.equal(
+        "b7ad6b7169203331",
+      );
+      expect(fetchStub).not.to.have.been.called;
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
