@@ -18,8 +18,9 @@ const nowNano = () =>
   );
 
 // Allowlist only: never dump process.env into a public trace.
-// Same names as api's CI tracing, so the CI Visibility replay can place the
-// spans in their job (JOB_CHECK_RUN_ID -> cicd.pipeline.task.run.id).
+// Same names as api's CI tracing, so a span can be matched back to its run and
+// job. The CI Visibility replay does not read them: datadog-ci places the spans
+// in their job from the JOB_CHECK_RUN_ID of the step that replays the file.
 const ciEnvAttrs = {
   GITHUB_REPOSITORY: "vcs.repository.name",
   GITHUB_SHA: "vcs.ref.head.revision",
