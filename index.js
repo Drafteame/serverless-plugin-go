@@ -249,7 +249,7 @@ export default class Go {
 
     // The build command itself is not traced: -ldflags may embed secrets.
     await this.tracer.span(
-      "go.compile",
+      `go.compile ${name}`,
       {
         "go.function": name,
         "go.os": env.GOOS,
@@ -347,7 +347,7 @@ export default class Go {
    * @return {void} This method does not return any value.
    */
   packageBootstrap(name, binPath) {
-    this.tracer.span("go.package", { "go.function": name }, (s) => {
+    this.tracer.span(`go.package ${name}`, { "go.function": name }, (s) => {
       this.zip.addFile("bootstrap", this.readFileSync(binPath), "", 0o755);
       // Fixed mtime so identical binaries produce byte-identical zips (stable hashes).
       this.zip.getEntry("bootstrap").header.time = zipEpoch;
