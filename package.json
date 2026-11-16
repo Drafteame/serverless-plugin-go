@@ -7,7 +7,7 @@
   "scripts": {
     "lint": "npx eslint --fix .",
     "format": "npx prettier --write .",
-    "test": "npx mocha index.test.js",
+    "test": "npx mocha index.test.js trace.test.js",
     "depsUpgrade": "node ./scripts/updateDeps.cjs",
     "pre-commit": "pre-commit install --hook-type commit-msg"
   },

@@ -5,7 +5,9 @@ import chalk from "chalk";
 import path from "path";
 import plimit from "p-limit";
 import AdmZip from "adm-zip";
-import { readFileSync } from "fs";
+import { readFileSync, statSync } from "fs";
+import { createHash } from "crypto";
+import { createTracer } from "./trace.js";
 
 // SupportedRuntimes Runtimes that are allowed to run Golang lambdas.
 const supportedRuntimes = ["provided.al2", "provided.al2023"];
@@ -39,16 +41,25 @@ export default class Go {
     };
 
     this.config = this.getConfig();
+    this.tracer = createTracer(process.env, this.traceResource());
 
     this.hooks = {
-      "before:deploy:function:packageFunction": this.compileFunction.bind(this),
-      "before:package:createDeploymentArtifacts":
-        this.compileFunctions.bind(this),
+      "before:deploy:function:packageFunction": this.traced(
+        "go.build",
+        this.compileFunction,
+      ),
+      "before:package:createDeploymentArtifacts": this.traced(
+        "go.build",
+        this.compileFunctions,
+      ),
 
       // Because of https://github.com/serverless/serverless/blob/master/lib/plugins/aws/invokeLocal/index.js#L361
       // plugin needs to compile a function and then ignore packaging.
-      "before:invoke:local:invoke": this.compileToInvoke.bind(this),
-      "go:build:build": this.compileFunctions.bind(this),
+      "before:invoke:local:invoke": this.traced(
+        "go.build",
+        this.compileToInvoke,
+      ),
+      "go:build:build": this.traced("go.build", this.compileFunctions),
     };
 
     this.commands = {
@@ -63,6 +74,53 @@ export default class Go {
         },
       },
     };
+  }
+
+  /**
+   * Static metadata attached to every exported span (only used when SP_GO_TRACE is on).
+   */
+  traceResource() {
+    return {
+      "service.version": JSON.parse(
+        readFileSync(new URL("./package.json", import.meta.url)),
+      ).version,
+      "process.runtime.version": process.version,
+      "host.arch": process.arch,
+      "os.type": process.platform,
+      "sls.service": this.serverless.service.service,
+    };
+  }
+
+  /**
+   * Wrap a hook in a root span and export the trace when it finishes.
+   */
+  traced(name, fn) {
+    return async (...args) => {
+      try {
+        return await this.tracer.span(name, {}, async (s) => {
+          if (s.enabled) {
+            s.set(
+              "go.functions",
+              Object.keys(this.serverless.service.functions).length,
+            );
+            s.set("go.concurrency", this.config.concurrency);
+            s.set("go.monorepo", Boolean(this.config.monorepo));
+            s.set("go.version", await this.goVersion());
+          }
+          return fn.apply(this, args);
+        });
+      } finally {
+        await this.tracer.flush((msg) => this.logDebug(msg));
+      }
+    };
+  }
+
+  async goVersion() {
+    try {
+      return (await this.exec("go version")).stdout.trim();
+    } catch (e) {
+      return "unknown";
+    }
   }
 
   /**
@@ -183,22 +241,37 @@ export default class Go {
     this.logDebug(`[${name}] cwd: ${cwd}`);
     this.logDebug(`[${name}] arch: ${arch}`);
 
-    await this.execCompilation(
-      config.cmd,
-      compileBinPath,
-      handler,
-      cwd,
-      env,
-      arch,
-    );
-
-    this.logInfo(`Compiled function: ${chalk.magenta(name)}`);
-
     let binPath = path.join(config.binDir, name);
 
     if (process.platform === "win32") {
       binPath = binPath.replace(/\\/g, "/");
     }
+
+    // The build command itself is not traced: -ldflags may embed secrets.
+    await this.tracer.span(
+      "go.compile",
+      {
+        "go.function": name,
+        "go.os": env.GOOS,
+        "go.arch": env.GOARCH,
+        "go.flags": env.GOFLAGS,
+        "go.cgo": env.CGO_ENABLED,
+        "faas.runtime": runtime,
+      },
+      async (s) => {
+        await this.execCompilation(
+          config.cmd,
+          compileBinPath,
+          handler,
+          cwd,
+          env,
+          arch,
+        );
+        this.setFileAttrs(s, "go.binary", binPath);
+      },
+    );
+
+    this.logInfo(`Compiled function: ${chalk.magenta(name)}`);
 
     this.serverless.service.functions[name].handler = binPath;
 
@@ -220,19 +293,26 @@ export default class Go {
 
     const execOpts = { cwd: cwd, env: { ...process.env, ...env } };
 
-    for (const cmd of this.config.beforeBuild) {
-      this.logDebug(`Executing beforeBuild command: ${cmd}`);
-      try {
-        await this.exec(cmd, execOpts);
-      } catch (e) {
-        this.logError(
-          `Error executing beforeBuild command (cwd: ${cwd}): ${e.message}`,
-        );
-        throw new Error(
-          `error executing beforeBuild command '${cmd}' (cwd: ${cwd})`,
-        );
-      }
-    }
+    // Only the command count is traced, never the commands (they may hold secrets).
+    await this.tracer.span(
+      "go.before_build",
+      { "go.before_build.commands": this.config.beforeBuild.length },
+      async () => {
+        for (const cmd of this.config.beforeBuild) {
+          this.logDebug(`Executing beforeBuild command: ${cmd}`);
+          try {
+            await this.exec(cmd, execOpts);
+          } catch (e) {
+            this.logError(
+              `Error executing beforeBuild command (cwd: ${cwd}): ${e.message}`,
+            );
+            throw new Error(
+              `error executing beforeBuild command '${cmd}' (cwd: ${cwd})`,
+            );
+          }
+        }
+      },
+    );
   }
 
   /**
@@ -267,17 +347,36 @@ export default class Go {
    * @return {void} This method does not return any value.
    */
   packageBootstrap(name, binPath) {
-    this.zip.addFile("bootstrap", this.readFileSync(binPath), "", 0o755);
-    // Fixed mtime so identical binaries produce byte-identical zips (stable hashes).
-    this.zip.getEntry("bootstrap").header.time = zipEpoch;
+    this.tracer.span("go.package", { "go.function": name }, (s) => {
+      this.zip.addFile("bootstrap", this.readFileSync(binPath), "", 0o755);
+      // Fixed mtime so identical binaries produce byte-identical zips (stable hashes).
+      this.zip.getEntry("bootstrap").header.time = zipEpoch;
 
-    const zipPath = binPath + ".zip";
-    this.zip.writeZip(zipPath);
+      const zipPath = binPath + ".zip";
+      this.zip.writeZip(zipPath);
 
-    this.serverless.service.functions[name].package = {
-      individually: true,
-      artifact: zipPath,
-    };
+      this.serverless.service.functions[name].package = {
+        individually: true,
+        artifact: zipPath,
+      };
+      this.setFileAttrs(s, "go.artifact", zipPath);
+    });
+  }
+
+  /**
+   * Add size and sha256 of a file to a span (no-op, and no file read, when tracing is off).
+   */
+  setFileAttrs(span, prefix, file) {
+    if (!span.enabled) return;
+    try {
+      span.set(`${prefix}.size`, statSync(file).size);
+      span.set(
+        `${prefix}.sha256`,
+        createHash("sha256").update(readFileSync(file)).digest("hex"),
+      );
+    } catch (e) {
+      this.logDebug(`could not read ${file} for tracing: ${e.message}`);
+    }
   }
 
   /**
