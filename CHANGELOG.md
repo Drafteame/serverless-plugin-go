@@ -1,3 +1,14 @@
+## v0.2.0 (2026-11-17)
+
+
+- feat: opt-in OpenTelemetry tracing of Go builds into CI Visibility [DEV-776] (#15)
+- * feat: opt-in OpenTelemetry tracing continuing W3C traceparent
+- * feat: file exporter and CI contract names for tracing
+- * docs: the CI replay places spans by JOB_CHECK_RUN_ID, not by cicd attributes
+- * feat: name compile and package spans after their function
+- The CI Visibility waterfall only shows span names, so four go.compile rows
+could not be told apart without opening each one.
+
 ## v0.1.4 (2026-11-13)
 
 
