@@ -114,6 +114,24 @@ custom:
 
 These commands will be executed once before all compilations, not for each function individually. This applies whether you're using `serverless deploy`, `serverless deploy function`, or `serverless invoke local`.
 
+## Tracing (opt-in)
+
+Set `SP_GO_TRACE=1` to export an OpenTelemetry trace of the build. It is off by default and adds no dependencies.
+
+```bash
+SP_GO_TRACE=1 \
+TRACEPARENT=00-<trace-id>-<parent-span-id>-01 \
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 \
+serverless package
+```
+
+- `TRACEPARENT` (W3C trace context) is optional: when valid, plugin spans continue that trace (e.g. your CI pipeline trace); otherwise a new trace is started.
+- If `CI_OTEL_FILE` (or `DEPLOY_OTEL_FILE`) is set, spans are instead appended as one OTLP/JSON line to that file (one `ExportTraceServiceRequest` per line). `CI_OTEL_ENABLED=true` / `DEPLOY_OTEL_ENABLED=true` also turn tracing on, and `CI_OTEL_EXPORTER=file|otlp` picks the exporter explicitly. `TRACESTATE` is forwarded as is.
+- Otherwise spans are sent once at the end as OTLP/HTTP JSON to `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`, or `OTEL_EXPORTER_OTLP_ENDPOINT` + `/v1/traces` (default `http://localhost:4318`). `OTEL_EXPORTER_OTLP_HEADERS` and `OTEL_SERVICE_NAME` are honored. Export failures never fail the build.
+- Spans: `go.build` (functions, concurrency, Go version), `go.before_build` (command count only), `go.compile <function>` (function, GOOS/GOARCH/GOFLAGS, runtime, binary size and sha256) and `go.package <function>` (zip size and sha256). The function name is in the span name because the CI Visibility waterfall only shows names.
+- Resource attributes: plugin version, Node version, host arch/OS, and, when present, `GITHUB_REPOSITORY`, `GITHUB_SHA`, `GITHUB_REF_NAME`, `GITHUB_WORKFLOW`, `GITHUB_RUN_ID`, `GITHUB_RUN_ATTEMPT`, `GITHUB_JOB`, `JOB_CHECK_RUN_ID`, `GITHUB_ACTOR` and `RUNNER_NAME` (as `vcs.*` / `cicd.*` OpenTelemetry names).
+- Nothing else from the environment is exported, and build commands (`cmd`, `beforeBuild`) are never included.
+
 ## Caveats
 
 This implementation doesn't allow to add any other files to the lambda artifact apart from the binary. To address this problem you should
